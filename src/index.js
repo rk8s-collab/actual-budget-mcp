@@ -3,7 +3,21 @@
 // index.js — Punto de entrada del MCP server para Actual Budget
 // Usa transporte stdio para comunicarse con Claude Desktop / Claude.ai
 
-import 'dotenv/config';
+// IMPORTANTE: Redirigir console.log a stderr ANTES de importar cualquier cosa.
+// Las librerías como @actual-app/api usan console.log internamente,
+// lo que contamina stdout (el canal de comunicación MCP con JSON).
+const originalLog = console.log;
+console.log = (...args) => console.error('[log]', ...args);
+
+import dotenv from 'dotenv';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+// Cargar .env desde la raíz del proyecto (ruta absoluta)
+dotenv.config({ path: join(__dirname, '..', '.env') });
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import {

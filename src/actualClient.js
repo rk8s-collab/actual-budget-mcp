@@ -1,6 +1,11 @@
 // actualClient.js — Módulo singleton para gestionar la conexión a Actual Budget
 import * as api from '@actual-app/api';
 import * as fs from 'fs';
+import { fileURLToPath } from 'url';
+import { dirname, join } from 'path';
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 let initialized = false;
 
@@ -13,8 +18,8 @@ export async function initActual() {
   if (initialized) return;
 
   try {
-    // Directorio temporal para datos locales (incluido en .gitignore)
-    const dataDir = './data';
+    // Ruta absoluta para evitar problemas con el directorio de trabajo
+    const dataDir = join(__dirname, '..', 'data');
     if (!fs.existsSync(dataDir)) fs.mkdirSync(dataDir, { recursive: true });
 
     await api.init({
