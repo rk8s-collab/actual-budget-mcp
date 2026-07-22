@@ -12,6 +12,7 @@ const input = {
     notes: z.string().max(1000).optional(),
   })).min(2).describe('Parts of the split (min 2)'),
   adjust_last: z.boolean().default(false).describe('Compute the last part as the exact remainder'),
+  force: z.boolean().default(false).describe('Allow splitting a reconciled transaction'),
 };
 const schema = z.object(input);
 
@@ -25,12 +26,19 @@ export const tool: ToolDef = {
     // Los guards del objetivo (existe, no es transferencia, no está ya dividido) son
     // más fundamentales que la cardinalidad de partes: se validan ANTES del schema
     // completo para que un transfer devuelva su error propio aunque llegue 1 sola parte.
-    const { transaction_id } = z.object({ transaction_id: input.transaction_id }).parse(raw ?? {});
+    const { transaction_id, force } = z
+      .object({ transaction_id: input.transaction_id, force: input.force })
+      .parse(raw ?? {});
     const orig = await getTransactionById(api, transaction_id);
     if (!orig) throw new Error(`Transacción no encontrada: ${transaction_id}`);
     if (orig.transfer_id) throw new Error('No se puede dividir una transferencia entre cuentas');
     if (orig.is_parent || (Array.isArray(orig.subtransactions) && orig.subtransactions.length > 0)) {
       throw new Error('La transacción ya está dividida; edita sus partes en Actual o deshaz el split primero');
+    }
+    // Dividir reemplaza la transacción: si estaba conciliada, la conciliación cerrada
+    // se rompe en silencio. Exigimos confirmación explícita.
+    if (orig.reconciled && !force) {
+      throw new Error('La transacción está conciliada; dividirla rompería la conciliación. Vuelve a intentarlo con force: true si estás seguro');
     }
 
     const a = schema.parse(raw ?? {});
@@ -61,6 +69,13 @@ export const tool: ToolDef = {
     if (orig.payee) copy.payee = orig.payee;
     if (orig.notes) copy.notes = orig.notes;
     if (orig.cleared !== undefined) copy.cleared = !!orig.cleared;
+    // Metadatos que la copia debe heredar: imported_id/imported_payee son la clave de
+    // deduplicación del banco (perderlos reimportaría el movimiento), schedule mantiene
+    // el vínculo con el repetitivo y reconciled preserva el estado de conciliación.
+    if (orig.imported_id) copy.imported_id = orig.imported_id;
+    if (orig.imported_payee) copy.imported_payee = orig.imported_payee;
+    if (orig.schedule) copy.schedule = orig.schedule;
+    if (orig.reconciled) copy.reconciled = true;
     await api.addTransactions(orig.account, [copy], { learnCategories: false, runTransfers: false });
 
     const { data: candidates } = await api.runQuery(

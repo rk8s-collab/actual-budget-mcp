@@ -8,6 +8,7 @@ const C1 = 'cccccccc-1111-4111-8111-111111111111';
 const C2 = 'cccccccc-2222-4222-8222-222222222222';
 
 const C_GHOST = 'cccccccc-0000-4000-8000-000000000000';
+const SCH1 = 'dddddddd-1111-4111-8111-111111111111';
 // Grupos de categorías del presupuesto: sólo C1 y C2 existen.
 const GROUPS = [{ id: 'g1', name: 'Gastos', is_income: false, categories: [
   { id: C1, name: 'Alimentacion' }, { id: C2, name: 'Ocio' },
@@ -17,13 +18,13 @@ const original = { id: T1, date: '2026-07-10', account: 'a1', payee: 'p1', amoun
 const newParent = { id: 't9', date: '2026-07-10', account: 'a1', payee: 'p1', amount: -18000, notes: 'super',
   subtransactions: [{ amount: -12000, category: C1 }, { amount: -6000, category: C2 }] };
 
-function apiForSplit() {
+function apiForSplit(orig: Record<string, unknown> = original) {
   let call = 0;
   return mockApi({
     getCategoryGroups: vi.fn(async () => GROUPS),
     runQuery: vi.fn(async () => {
       call += 1;
-      if (call === 1) return { data: [original] };                      // pre-read
+      if (call === 1) return { data: [orig] };                         // pre-read
       if (call === 2) return { data: [{ id: T1 }, { id: 't9' }] };    // locate candidates
       return { data: [newParent] };                                     // echo grouped
     }),
@@ -99,6 +100,31 @@ describe('split_transaction', () => {
       ] },
       { api, config: testConfig },
     )).rejects.toThrow(C_GHOST);
+    expect(api.addTransactions).not.toHaveBeenCalled();
+    expect(api.deleteTransaction).not.toHaveBeenCalled();
+  });
+  it('carries imported_id, imported_payee, reconciled and schedule to the replacement', async () => {
+    const api = apiForSplit({ ...original, imported_id: 'imp-1', imported_payee: 'MERCADONA S.A.', schedule: SCH1, reconciled: true });
+    await tool.handler(
+      { transaction_id: T1, force: true, splits: [
+        { amount: -120, category_id: C1 },
+        { amount: -60, category_id: C2 },
+      ] },
+      { api, config: testConfig },
+    );
+    expect((api.addTransactions as any).mock.calls[0][1][0]).toMatchObject({
+      imported_id: 'imp-1', imported_payee: 'MERCADONA S.A.', schedule: SCH1, reconciled: true,
+    });
+  });
+  it('refuses to split a reconciled transaction unless forced', async () => {
+    const api = apiForSplit({ ...original, reconciled: true });
+    await expect(tool.handler(
+      { transaction_id: T1, splits: [
+        { amount: -120, category_id: C1 },
+        { amount: -60, category_id: C2 },
+      ] },
+      { api, config: testConfig },
+    )).rejects.toThrow(/conciliad/i);
     expect(api.addTransactions).not.toHaveBeenCalled();
     expect(api.deleteTransaction).not.toHaveBeenCalled();
   });
