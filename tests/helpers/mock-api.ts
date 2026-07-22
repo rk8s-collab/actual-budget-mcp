@@ -25,6 +25,14 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     getNote: vi.fn(async () => null),
     q: vi.fn((table: string) => { const b = chainableQ(); b.table = table; return b; }),
     runQuery: vi.fn(async () => ({ data: [] })),
+    updateTransaction: vi.fn(async () => []),
+    addTransactions: vi.fn(async () => 'ok'),
+    deleteTransaction: vi.fn(async () => undefined),
+    createSchedule: vi.fn(async () => 'sched-id'),
+    setBudgetAmount: vi.fn(async () => undefined),
+    setBudgetCarryover: vi.fn(async () => undefined),
+    batchBudgetUpdates: vi.fn(async (fn: () => Promise<void>) => { await fn(); }),
+    updateNote: vi.fn(async () => undefined),
     ...overrides,
   };
 }
