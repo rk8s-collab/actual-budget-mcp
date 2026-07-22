@@ -4,7 +4,7 @@ Servidor MCP (Model Context Protocol) que conecta Claude Desktop / Claude.ai con
 
 ## Requisitos
 
-- **Node.js** >= 18.0.0
+- Node.js >= 22
 - **Actual Budget** self-hosted y accesible por red
 - **Claude Desktop** o **Claude.ai** con soporte MCP
 
@@ -141,6 +141,6 @@ El `handler(input, ctx)` recibe el contexto `{ api, config }` ya inicializado; u
 
 ## Notas técnicas
 
-- Los importes en Actual Budget se almacenan como enteros en céntimos. Este servidor los convierte a euros (dividi entre 100) en todas las respuestas.
+- Los importes de Actual están en céntimos; las tools los devuelven SIEMPRE convertidos a unidades de la moneda configurada (÷ 100 en el servidor, campos amount y amount_formatted).
 - Las transferencias entre cuentas se identifican por `transfer_id` y se excluyen de los resúmenes para no doblar importes.
 - La primera conexión a Actual Budget puede tardar unos segundos mientras descarga el presupuesto.

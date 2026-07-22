@@ -14,6 +14,7 @@ describe('get_accounts', () => {
     const r: any = await tool.handler({}, { api, config: testConfig });
     expect(r.accounts.map((a: any) => a.id)).toEqual(['a1', 'a2']);
     expect(r.accounts[0]).toMatchObject({ amount: 1624.98, amount_formatted: '$1,624.98', on_budget: true });
+    expect(r.accounts[0]).not.toHaveProperty('type');
     expect(r.total_count).toBe(2);
   });
   it('includes closed and filters off-budget on demand', async () => {

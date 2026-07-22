@@ -1,6 +1,11 @@
 // config.ts — entorno validado con Zod. Único punto de lectura de variables de
 // entorno; el resto de módulos consume el objeto Config ya validado.
 import { z } from 'zod';
+import * as path from 'node:path';
+import { fileURLToPath } from 'node:url';
+
+// config.ts vive en src/core (dev) o dist/core (build): ../../ es la raíz del paquete en ambos
+const PKG_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..', '..');
 
 const envSchema = z.object({
   ACTUAL_SERVER_URL: z.url({ message: 'ACTUAL_SERVER_URL debe ser una URL válida' }),
@@ -38,7 +43,7 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     serverUrl: e.ACTUAL_SERVER_URL,
     password: e.ACTUAL_SERVER_PASSWORD,
     syncId: e.ACTUAL_SYNC_ID,
-    dataDir: e.ACTUAL_DATA_DIR,
+    dataDir: path.isAbsolute(e.ACTUAL_DATA_DIR) ? e.ACTUAL_DATA_DIR : path.resolve(PKG_ROOT, e.ACTUAL_DATA_DIR),
     locale: e.LOCALE,
     currency: e.CURRENCY,
     syncTtlSeconds: e.SYNC_TTL_SECONDS,

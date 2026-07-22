@@ -7,6 +7,9 @@
   "bin": {
     "actual-budget-mcp": "dist/index.js"
   },
+  "engines": {
+    "node": ">=22"
+  },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",

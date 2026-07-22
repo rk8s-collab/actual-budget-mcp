@@ -21,7 +21,6 @@ export const tool: ToolDef = {
       .map((a: any) => ({
         id: a.id,
         name: a.name,
-        type: a.type ?? 'checking',
         on_budget: !a.offbudget,
         closed: !!a.closed,
         ...moneyFields(a.balance_current ?? 0, config.locale, config.currency),

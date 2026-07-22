@@ -1,4 +1,5 @@
 import { describe, it, expect } from 'vitest';
+import * as path from 'node:path';
 import { loadConfig } from '../../src/core/config.js';
 
 const base = {
@@ -12,12 +13,20 @@ describe('loadConfig', () => {
     const c = loadConfig(base);
     expect(c).toMatchObject({
       serverUrl: 'https://actual.example.com',
-      dataDir: './data',
       locale: 'en-US',
       currency: 'USD',
       syncTtlSeconds: 60,
       enableWrite: false,
     });
+  });
+  it('resolves the default dataDir to an absolute path under the package root', () => {
+    const c = loadConfig(base);
+    expect(path.isAbsolute(c.dataDir)).toBe(true);
+    expect(c.dataDir.endsWith('/data')).toBe(true);
+  });
+  it('preserves an absolute ACTUAL_DATA_DIR override verbatim', () => {
+    const c = loadConfig({ ...base, ACTUAL_DATA_DIR: '/tmp/x' });
+    expect(c.dataDir).toBe('/tmp/x');
   });
   it('reads overrides', () => {
     const c = loadConfig({ ...base, LOCALE: 'es-ES', CURRENCY: 'EUR', SYNC_TTL_SECONDS: '30', ENABLE_WRITE: 'true' });
