@@ -39,5 +39,6 @@ describe('catalog', () => {
     expect(allTools.map((t) => t.name)).toContain('create_schedule');
     expect(allTools.map((t) => t.name)).toContain('set_budget');
     expect(allTools.map((t) => t.name)).toContain('transfer_budget');
+    expect(allTools.map((t) => t.name)).toContain('update_category_note');
   });
 });
