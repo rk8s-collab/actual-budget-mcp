@@ -18,6 +18,9 @@ describe('collectTools', () => {
   it('rejects invalid tool names', () => {
     expect(() => collectTools([mk('bad.name', true)], true)).toThrowError(/bad\.name/);
   });
+  it('validates names of write-gated tools even when filtered out', () => {
+    expect(() => collectTools([mk('bad.write', false)], false)).toThrowError(/bad\.write/);
+  });
 });
 
 describe('catalog (plan 1)', () => {

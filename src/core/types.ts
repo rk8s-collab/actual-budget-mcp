@@ -13,5 +13,7 @@ export interface ToolDef {
   readOnly: boolean;                 // false => only registered when enableWrite
   inputSchema: ZodRawShape;          // Zod raw shape consumed by SDK registerTool
   outputSchema?: ZodRawShape;        // optional; enables SDK-side structuredContent validation
+  /** Solo tools de escritura: se fusiona sobre los defaults de server.ts */
+  annotations?: { destructiveHint?: boolean; idempotentHint?: boolean };
   handler: (input: any, ctx: ToolContext) => Promise<unknown>;
 }

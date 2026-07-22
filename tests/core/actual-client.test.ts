@@ -57,4 +57,11 @@ describe('ActualClient.ensureReady', () => {
     api.sync.mockRejectedValueOnce(new Error('offline'));
     await expect(c.ensureReady({ forWrite: true })).rejects.toThrow(/offline/);
   });
+  it('does not double-init on concurrent first calls', async () => {
+    const api = mockApi();
+    const c = new ActualClient(api, cfg, () => 0);
+    await Promise.all([c.ensureReady(), c.ensureReady()]);
+    expect(api.init).toHaveBeenCalledTimes(1);
+    expect(api.downloadBudget).toHaveBeenCalledTimes(1);
+  });
 });

@@ -9,6 +9,7 @@ import type { Config } from './config.js';
 
 export class ActualClient {
   private initialized = false;
+  private initPromise: Promise<void> | null = null;
   private lastSyncMs: number | null = null;
 
   constructor(
@@ -21,14 +22,19 @@ export class ActualClient {
     opts: { forWrite?: boolean } = {},
   ): Promise<{ stale: boolean; lastSynced: string | null }> {
     if (!this.initialized) {
-      fs.mkdirSync(this.config.dataDir, { recursive: true });
-      await this.api.init({
-        dataDir: this.config.dataDir,
-        serverURL: this.config.serverUrl,
-        password: this.config.password,
-      });
-      await this.api.downloadBudget(this.config.syncId);
-      this.initialized = true;
+      if (!this.initPromise) {
+        this.initPromise = (async () => {
+          fs.mkdirSync(this.config.dataDir, { recursive: true });
+          await this.api.init({
+            dataDir: this.config.dataDir,
+            serverURL: this.config.serverUrl,
+            password: this.config.password,
+          });
+          await this.api.downloadBudget(this.config.syncId);
+          this.initialized = true;
+        })();
+      }
+      await this.initPromise;
       // lastSyncMs sigue null: el bloque de TTL de abajo hará la sincronización inicial.
     }
 

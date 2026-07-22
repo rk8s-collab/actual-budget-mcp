@@ -10,10 +10,15 @@ export function buildToolResult(
   payload: unknown,
   meta: { stale: boolean; lastSynced: string | null },
 ) {
-  const body: any =
-    meta.stale && payload && typeof payload === 'object'
-      ? { ...(payload as object), stale_data: true, last_synced: meta.lastSynced }
-      : payload;
+  let body: any = payload;
+  if (meta.stale) {
+    const base = Array.isArray(payload)
+      ? { items: payload }
+      : payload && typeof payload === 'object'
+        ? payload
+        : { value: payload };
+    body = { ...base, stale_data: true, last_synced: meta.lastSynced };
+  }
   return {
     content: [{ type: 'text' as const, text: JSON.stringify(body) }],
     structuredContent: body,
@@ -46,7 +51,7 @@ export function createServer(deps: {
         ...(tool.outputSchema ? { outputSchema: tool.outputSchema } : {}),
         annotations: tool.readOnly
           ? { readOnlyHint: true }
-          : { readOnlyHint: false, destructiveHint: false, idempotentHint: false },
+          : { readOnlyHint: false, destructiveHint: false, idempotentHint: false, ...(tool.annotations ?? {}) },
       },
       async (input: any) => {
         try {

@@ -12,4 +12,8 @@ describe('buildToolResult', () => {
     const r = buildToolResult({ a: 1 }, { stale: true, lastSynced: '2026-07-20T09:00:00.000Z' });
     expect(r.structuredContent).toMatchObject({ a: 1, stale_data: true, last_synced: '2026-07-20T09:00:00.000Z' });
   });
+  it('does not spread stale flags into array payloads', () => {
+    const r = buildToolResult([{ a: 1 }], { stale: true, lastSynced: 'x' });
+    expect(r.structuredContent).toEqual({ items: [{ a: 1 }], stale_data: true, last_synced: 'x' });
+  });
 });
