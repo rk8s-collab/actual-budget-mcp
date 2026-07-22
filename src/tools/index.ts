@@ -14,5 +14,6 @@ import { tool as splitTransaction } from './split_transaction.js';
 import { tool as createTransaction } from './create_transaction.js';
 import { tool as createSchedule } from './create_schedule.js';
 import { tool as setBudget } from './set_budget.js';
+import { tool as transferBudget } from './transfer_budget.js';
 
-export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction, categorizeTransactions, splitTransaction, createTransaction, createSchedule, setBudget];
+export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction, categorizeTransactions, splitTransaction, createTransaction, createSchedule, setBudget, transferBudget];
