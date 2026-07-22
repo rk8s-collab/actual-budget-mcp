@@ -9,5 +9,6 @@ import { tool as getBudgetMonth } from './get_budget_month.js';
 import { tool as getBudgetAverages } from './get_budget_averages.js';
 import { tool as getSchedules } from './get_schedules.js';
 import { tool as updateTransaction } from './update_transaction.js';
+import { tool as categorizeTransactions } from './categorize_transactions.js';
 
-export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction];
+export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction, categorizeTransactions];

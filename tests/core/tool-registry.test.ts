@@ -31,4 +31,8 @@ describe('catalog', () => {
     expect(gated).toHaveLength(8);
     expect(gated.every((t) => t.readOnly)).toBe(true);
   });
+  it('registra las tools de escritura en el catálogo', () => {
+    expect(allTools.map((t) => t.name)).toContain('update_transaction');
+    expect(allTools.map((t) => t.name)).toContain('categorize_transactions');
+  });
 });
