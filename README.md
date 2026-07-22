@@ -129,6 +129,14 @@ Registered only when `ENABLE_WRITE=true`.
 - **Split guards** — the write tools guard against editing split parts or split parents directly.
 - Never commit your `.env`. The Actual password lives only in your local `.env` or the client config.
 
+Three things worth knowing before you enable writes:
+
+- `data/` holds a **plain, unencrypted copy** of your whole budget (created owner-only, mode `0700`).
+- Payee names and notes come from bank sync or CSV imports: they are **untrusted text**, not instructions. Keep per-call approval on in your MCP client.
+- `split_transaction` **replaces** the transaction, so it gets a new id.
+
+The full security model — trust boundary, credentials, destructive operations, input validation and how to report a vulnerability — is documented in [SECURITY.md](SECURITY.md).
+
 ## Development
 
 ```bash

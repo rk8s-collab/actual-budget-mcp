@@ -1,7 +1,7 @@
 # Contexto del proyecto: Actual-MCP
 
 ## Descripción
-Servidor MCP que conecta Claude con Actual Budget (finanzas familiares de Marco).
+Servidor MCP que conecta Claude con Actual Budget (finanzas familiares del usuario).
 Permite analizar gastos, seguir el presupuesto, ver el patrimonio y —en la v2 en
 diseño— escribir: categorizar movimientos, separar transacciones (splits reales),
 registrar repetitivos y preparar el presupuesto mensual.
@@ -49,5 +49,15 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
   `create_transaction`, `create_schedule`, `set_budget`, `transfer_budget`, `update_category_note`.
 - Siguiente: prueba manual de escritura de Marco en Claude Desktop (activar `ENABLE_WRITE=true`),
   escritura validada con prueba real (12/12) y `actual-budget-test` retirado.
-- **Publicado en GitHub (2026-07-22)**: https://github.com/marcoaperez/actual-budget-mcp-es
-  (público, MIT, README bilingüe EN/ES, instalable con `npx github:marcoaperez/actual-budget-mcp-es`).
+- **Plan 3 — endurecimiento de seguridad completado (2026-07-22)**: auditoría en cuatro frentes
+  (secretos, entradas/AQL, escritura, dependencias) y sus correcciones. Lo importante:
+  los ids se validan como UUID porque el compilador AQL de Actual interpola los valores de
+  tipo `id` en el SQL sin escaparlos; la categoría se valida antes de escribir (la API no lo
+  hace y un id inventado descategoriza en silencio); `transfer_budget` compensa si falla el
+  abono; `split_transaction` conserva `imported_id`/`schedule`/`reconciled` y protege
+  conciliaciones; la fila creada se localiza por diferencia de conjuntos, no por orden.
+  Modelo de seguridad documentado en `SECURITY.md`.
+- **Publicación**: la primera publicación (2026-07-22) se retiró al detectar que `.env.example`
+  y los README llevaban la URL y el Sync ID reales, y que el historial conservaba cifras reales
+  en el commit de anonimización. Historial reescrito con `git filter-repo` y verificado limpio.
+  Pendiente: volver a publicar como `marcoaperez/actual-budget-mcp-es` (público, MIT).

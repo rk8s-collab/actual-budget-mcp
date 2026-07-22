@@ -164,6 +164,14 @@ El `handler(input, ctx)` recibe el contexto `{ api, config }` ya inicializado; u
 - El `.gitignore` ya excluye `.env`, `node_modules/` y datos locales
 - No hay tools de borrado; las tools de escritura no se registran sin `ENABLE_WRITE`; hay guardas contra editar partes/padres de un split
 
+Tres cosas que conviene saber antes de activar la escritura:
+
+- `data/` guarda una **copia sin cifrar** de todo tu presupuesto (se crea con permisos `0700`, solo para ti).
+- Los nombres de pagador y las notas vienen del banco o de importaciones CSV: son **texto no confiable**, no instrucciones. Mantén la aprobación por llamada activada en tu cliente MCP.
+- `split_transaction` **reemplaza** la transacción, así que obtiene un id nuevo.
+
+El modelo de seguridad completo — frontera de confianza, credenciales, operaciones destructivas, validación de entrada y cómo reportar una vulnerabilidad — está en [SECURITY.md](SECURITY.md) (en inglés).
+
 ## Notas técnicas
 
 - Los importes de Actual están en céntimos; las tools los devuelven SIEMPRE convertidos a unidades de la moneda configurada (÷ 100 en el servidor, campos amount y amount_formatted).

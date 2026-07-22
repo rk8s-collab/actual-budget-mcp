@@ -14,7 +14,7 @@ export const tool: ToolDef = {
   name: 'categorize_transactions',
   description: 'Bulk-categorize transactions: [{transaction_id, category_id}] (max 50). Each update applies independently; the result names exactly which succeeded and which failed.',
   readOnly: false,
-  annotations: { destructiveHint: false, idempotentHint: true },
+  annotations: { destructiveHint: true, idempotentHint: true },
   inputSchema: input,
   handler: async (raw, { api }) => {
     const a = schema.parse(raw ?? {});
