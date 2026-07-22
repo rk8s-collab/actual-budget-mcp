@@ -34,7 +34,29 @@ export const tool: ToolDef = {
     const newFrom = (from.budgeted ?? 0) - cents;
     const newTo = (to.budgeted ?? 0) + cents;
     await api.setBudgetAmount(a.month, a.from_category_id, newFrom);
-    await api.setBudgetAmount(a.month, a.to_category_id, newTo);
+    try {
+      await api.setBudgetAmount(a.month, a.to_category_id, newTo);
+    } catch (err) {
+      // Compensar: dejar el origen como estaba. Un traspaso a medias es peor
+      // que uno no hecho, y el usuario no lo vería en el mensaje de error.
+      // Ojo: el throw de éxito va FUERA del try para que su propio catch no lo trague.
+      let rolledBack = false;
+      let rollbackMsg = '';
+      try {
+        await api.setBudgetAmount(a.month, a.from_category_id, from.budgeted ?? 0);
+        rolledBack = true;
+      } catch (rollbackErr) {
+        rollbackMsg = (rollbackErr as Error).message;
+      }
+      if (rolledBack) {
+        throw new Error(
+          `No se pudo abonar en destino (${(err as Error).message}); el traspaso se ha revertido y no se ha movido nada`,
+        );
+      }
+      throw new Error(
+        `No se pudo abonar en destino (${(err as Error).message}) y ADEMÁS falló la reversión del origen (${rollbackMsg}); revisa ${from.name} en Actual`,
+      );
+    }
 
     const fmt = (c: number) => moneyFields(c, config.locale, config.currency);
     return {

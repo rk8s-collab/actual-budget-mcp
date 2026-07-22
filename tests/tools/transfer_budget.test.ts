@@ -1,4 +1,4 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { tool } from '../../src/tools/transfer_budget.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
 
@@ -38,5 +38,33 @@ describe('transfer_budget', () => {
       { month: '2026-08', from_category_id: CX, to_category_id: C2, amount: 10 },
       { api, config: testConfig },
     )).rejects.toThrow(CX);
+  });
+  it('compensates the source when the second leg fails', async () => {
+    const api = mockApi({ getBudgetMonth: async () => month });
+    const calls: any[] = [];
+    (api.setBudgetAmount as any) = vi.fn(async (m: string, cat: string, cents: number) => {
+      calls.push([m, cat, cents]);
+      if (cat === C2) throw new Error('fallo de red');
+    });
+    await expect(tool.handler(
+      { month: '2026-08', from_category_id: C1, to_category_id: C2, amount: 50 },
+      { api, config: testConfig },
+    )).rejects.toThrow(/revertido y no se ha movido nada/);
+    // origen restado y luego restaurado a su valor original
+    expect(calls[0]).toEqual(['2026-08', C1, 30000]);
+    expect(calls[calls.length - 1]).toEqual(['2026-08', C1, 35000]);
+    expect(calls).toHaveLength(3);
+  });
+  it('reports both failures when the rollback also fails', async () => {
+    const api = mockApi({ getBudgetMonth: async () => month });
+    let n = 0;
+    (api.setBudgetAmount as any) = vi.fn(async () => {
+      n += 1;
+      if (n >= 2) throw new Error(n === 2 ? 'fallo de red' : 'fallo al revertir');
+    });
+    await expect(tool.handler(
+      { month: '2026-08', from_category_id: C1, to_category_id: C2, amount: 50 },
+      { api, config: testConfig },
+    )).rejects.toThrow(/ADEMÁS falló la reversión del origen \(fallo al revertir\).*Alimentacion/);
   });
 });
