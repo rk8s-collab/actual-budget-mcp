@@ -47,8 +47,9 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
 - **Plan 2 completado (2026-07-22)**: 16 tools (8 lectura + 8 escritura tras `ENABLE_WRITE`).
   Las de escritura: `update_transaction`, `categorize_transactions`, `split_transaction`,
   `create_transaction`, `create_schedule`, `set_budget`, `transfer_budget`, `update_category_note`.
-- Siguiente: prueba manual de escritura de Marco en Claude Desktop (activar `ENABLE_WRITE=true`),
-  escritura validada con prueba real (12/12) y `actual-budget-test` retirado.
+- Escritura validada con prueba real contra el servidor (12/12 operaciones, datos de prueba
+  limpiados) y `actual-budget-test` (agigante80) retirado. `ENABLE_WRITE` se activa en la
+  configuración del cliente MCP cuando se quiera escribir.
 - **Plan 3 — endurecimiento de seguridad completado (2026-07-22)**: auditoría en cuatro frentes
   (secretos, entradas/AQL, escritura, dependencias) y sus correcciones. Lo importante:
   los ids se validan como UUID porque el compilador AQL de Actual interpola los valores de
