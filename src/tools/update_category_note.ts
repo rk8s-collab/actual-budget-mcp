@@ -21,6 +21,6 @@ export const tool: ToolDef = {
     if (!name) throw new Error(`Categoría no encontrada: ${a.category_id} (usa get_categories para ver los ids)`);
     await api.updateNote(a.category_id, a.note);
     const stored = await api.getNote(a.category_id);
-    return { updated: true, category_id: a.category_id, category_name: name, note: stored ?? a.note };
+    return { updated: true, category_id: a.category_id, category_name: name, note: stored ?? null };
   },
 };

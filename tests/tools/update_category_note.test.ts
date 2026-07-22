@@ -20,4 +20,13 @@ describe('update_category_note', () => {
       .rejects.toThrow(/cX/);
     expect(api.updateNote).not.toHaveBeenCalled();
   });
+  it('echoes the real stored state (null) when the note is cleared', async () => {
+    const api = mockApi({
+      getCategoryGroups: async () => groups,
+      getNote: async () => null,
+    });
+    const r: any = await tool.handler({ category_id: 'c1', note: '' }, { api, config: testConfig });
+    expect(api.updateNote).toHaveBeenCalledWith('c1', '');
+    expect(r.note).toBeNull();
+  });
 });
