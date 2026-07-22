@@ -23,10 +23,12 @@ describe('collectTools', () => {
   });
 });
 
-describe('catalog (plan 1)', () => {
-  it('ships exactly 8 read tools', () => {
-    expect(allTools).toHaveLength(8);
-    expect(allTools.every((t) => t.readOnly)).toBe(true);
-    expect(collectTools(allTools, false)).toHaveLength(8);
+describe('catalog', () => {
+  it('keeps the 8 plan-1 read tools and gates write tools out when enableWrite=false', () => {
+    const readTools = allTools.filter((t) => t.readOnly);
+    expect(readTools).toHaveLength(8);
+    const gated = collectTools(allTools, false);
+    expect(gated).toHaveLength(8);
+    expect(gated.every((t) => t.readOnly)).toBe(true);
   });
 });
