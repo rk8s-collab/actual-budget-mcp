@@ -9,7 +9,7 @@ const input = {
   end_date: DATE.describe('End date YYYY-MM-DD'),
   account_id: ID.optional(),
   category_id: ID.optional(),
-  search_text: z.string().optional().describe('Substring match on payee name or notes'),
+  search_text: z.string().max(200).optional().describe('Substring match on payee name or notes'),
   min_amount: z.number().optional().describe('Units, e.g. -500'),
   max_amount: z.number().optional(),
   uncategorized: z.boolean().default(false),

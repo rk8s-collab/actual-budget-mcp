@@ -10,7 +10,7 @@ const input = {
   account_id: ID,
   date: DATE,
   amount: z.number().describe('Units; negative = expense, positive = income'),
-  payee_name: z.string().optional(),
+  payee_name: z.string().max(200).optional(),
   category_id: ID.optional(),
   notes: z.string().max(1000).optional(),
   cleared: z.boolean().optional(),
@@ -18,7 +18,7 @@ const input = {
     amount: z.number(),
     category_id: ID,
     notes: z.string().max(1000).optional(),
-  })).min(2).optional().describe('Create already split; parts must sum exactly to amount'),
+  })).min(2).max(20).optional().describe('Create already split (max 20 parts); parts must sum exactly to amount'),
 };
 const schema = z.object(input);
 

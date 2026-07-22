@@ -18,6 +18,12 @@
     "budgeting",
     "claude"
   ],
+  "files": [
+    "dist",
+    "README.md",
+    "README.es.md",
+    "LICENSE"
+  ],
   "bin": {
     "actual-budget-mcp": "dist/index.js"
   },
@@ -36,7 +42,7 @@
   "dependencies": {
     "@actual-app/api": "^26.7.0",
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "dotenv": "latest",
+    "dotenv": "^17.3.1",
     "zod": "^4.4.3"
   },
   "devDependencies": {

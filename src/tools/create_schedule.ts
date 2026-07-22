@@ -5,17 +5,17 @@ import { ID, type ToolDef } from '../core/types.js';
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
 
 const input = {
-  name: z.string().min(1).describe('Unique display name'),
-  payee_name: z.string().min(1).describe('Existing payee, matched case-insensitively'),
+  name: z.string().min(1).max(200).describe('Unique display name'),
+  payee_name: z.string().min(1).max(200).describe('Existing payee, matched case-insensitively'),
   account_id: ID,
   amount: z.number().describe('Units; negative = expense'),
   date: DATE.optional().describe('One-off schedule on this date (alternative to recurrence)'),
   recurrence: z.object({
     frequency: z.enum(['daily', 'weekly', 'monthly', 'yearly']),
     start: DATE,
-    interval: z.number().int().min(1).optional().describe('Every N periods (default 1)'),
+    interval: z.number().int().min(1).max(52).optional().describe('Every N periods (default 1, max 52)'),
     end_date: DATE.optional(),
-    end_occurrences: z.number().int().min(1).optional(),
+    end_occurrences: z.number().int().min(1).max(520).optional(),
   }).optional(),
   auto_post: z.boolean().default(false).describe('Post the transaction automatically when due'),
 };

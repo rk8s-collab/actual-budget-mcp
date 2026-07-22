@@ -29,8 +29,18 @@ describe('update_category_note', () => {
       getCategoryGroups: async () => groups,
       getNote: async () => null,
     });
-    const r: any = await tool.handler({ category_id: C1, note: '' }, { api, config: testConfig });
+    const r: any = await tool.handler({ category_id: C1, note: '', clear: true }, { api, config: testConfig });
     expect(api.updateNote).toHaveBeenCalledWith(C1, '');
     expect(r.note).toBeNull();
+  });
+  it('returns the previous note and requires clear:true to wipe it', async () => {
+    const api = mockApi({
+      getCategoryGroups: async () => groups,
+      getNote: async () => ({ id: C1, note: '#template 350' }),
+    });
+    const r: any = await tool.handler({ category_id: C1, note: '#template 400' }, { api, config: testConfig });
+    expect(r.previous_note).toBe('#template 350');
+    await expect(tool.handler({ category_id: C1, note: '' }, { api, config: testConfig }))
+      .rejects.toThrow(/clear/i);
   });
 });

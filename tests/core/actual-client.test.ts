@@ -1,5 +1,13 @@
 import { describe, it, expect, vi } from 'vitest';
+import * as fs from 'node:fs';
 import { ActualClient } from '../../src/core/actual-client.js';
+
+// El namespace ESM de node:fs no es spy-able (propiedades no reconfigurables):
+// se mockea el módulo entero y se conserva el resto de la API real.
+vi.mock('node:fs', async (importOriginal) => {
+  const actual = await importOriginal<typeof import('node:fs')>();
+  return { ...actual, default: actual, mkdirSync: vi.fn() };
+});
 import type { Config } from '../../src/core/config.js';
 
 const cfg: Config = {
@@ -63,6 +71,14 @@ describe('ActualClient.ensureReady', () => {
     await Promise.all([c.ensureReady(), c.ensureReady()]);
     expect(api.init).toHaveBeenCalledTimes(1);
     expect(api.downloadBudget).toHaveBeenCalledTimes(1);
+  });
+  it('creates the data dir with restrictive permissions', async () => {
+    const api = mockApi();
+    const mkdir = vi.mocked(fs.mkdirSync);
+    mkdir.mockClear();
+    const c = new ActualClient(api, cfg, () => 0);
+    await c.ensureReady();
+    expect(mkdir).toHaveBeenCalledWith(cfg.dataDir, { recursive: true, mode: 0o700 });
   });
   it('retries init after a failed first attempt', async () => {
     const api = mockApi();

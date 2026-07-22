@@ -18,7 +18,8 @@ export const tool: ToolDef = {
   name: 'transfer_budget',
   description: 'Move budgeted money between two categories within a month. Returns both cells with their new budgeted values.',
   readOnly: false,
-  annotations: { destructiveHint: false, idempotentHint: false },
+  // Reescribe el asignado de ambas categorías: destructivo (en MCP, false = solo aditivo).
+  annotations: { destructiveHint: true, idempotentHint: false },
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});

@@ -25,7 +25,8 @@ export class ActualClient {
       if (!this.initPromise) {
         this.initPromise = (async () => {
           try {
-            fs.mkdirSync(this.config.dataDir, { recursive: true });
+            // 0700: la copia local del presupuesto no está cifrada; solo el propietario debe leerla.
+            fs.mkdirSync(this.config.dataDir, { recursive: true, mode: 0o700 });
             await this.api.init({
               dataDir: this.config.dataDir,
               serverURL: this.config.serverUrl,

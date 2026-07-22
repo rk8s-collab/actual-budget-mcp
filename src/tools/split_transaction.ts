@@ -10,7 +10,7 @@ const input = {
     amount: z.number().describe('Units; same sign as the original. With adjust_last, the LAST part may be 0 (computed server-side)'),
     category_id: ID,
     notes: z.string().max(1000).optional(),
-  })).min(2).describe('Parts of the split (min 2)'),
+  })).min(2).max(20).describe('Parts of the split (min 2, max 20)'),
   adjust_last: z.boolean().default(false).describe('Compute the last part as the exact remainder'),
   force: z.boolean().default(false).describe('Allow splitting a reconciled transaction'),
 };

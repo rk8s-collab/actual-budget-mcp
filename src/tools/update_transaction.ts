@@ -9,7 +9,7 @@ const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-D
 const input = {
   transaction_id: ID,
   category_id: ID.optional(),
-  payee_name: z.string().optional().describe('Payee by name (resolved/created server-side)'),
+  payee_name: z.string().max(200).optional().describe('Payee by name (resolved/created server-side)'),
   notes: z.string().max(1000).optional(),
   date: DATE.optional(),
   amount: z.number().optional().describe('Units (e.g. -45.50)'),
@@ -21,7 +21,8 @@ export const tool: ToolDef = {
   name: 'update_transaction',
   description: 'Update fields of an existing transaction (category, payee, notes, date, amount, cleared). Amount in currency units. Returns the resulting transaction.',
   readOnly: false,
-  annotations: { destructiveHint: false, idempotentHint: true },
+  // Sobrescribe los campos indicados de la transacción: destructivo (en MCP, false = solo aditivo).
+  annotations: { destructiveHint: true, idempotentHint: true },
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});

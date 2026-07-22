@@ -19,7 +19,8 @@ export const tool: ToolDef = {
   name: 'set_budget',
   description: 'Assign budget amounts (units) to categories for given months — single cell or bulk (max 50 ops, e.g. applying a full monthly budget or copying a month). Per-operation results.',
   readOnly: false,
-  annotations: { destructiveHint: false, idempotentHint: true },
+  // Sobrescribe el presupuesto asignado del mes: destructivo (en MCP, false = solo aditivo).
+  annotations: { destructiveHint: true, idempotentHint: true },
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});

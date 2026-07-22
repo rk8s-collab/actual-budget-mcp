@@ -11,7 +11,16 @@ const input = {
   include_income: z.boolean().default(false),
   top_n: z.number().int().min(1).optional().describe('Return top N rows and roll the rest into "others"'),
 };
-const schema = z.object(input);
+// Un rango sin techo puede recorrer todo el histórico y devolver un resultado enorme:
+// 5 años cubre cualquier análisis razonable y acota el coste de la consulta.
+const MAX_RANGE_DAYS = 5 * 366;
+const schema = z.object(input).refine(
+  (v) => {
+    const days = (Date.parse(v.end_date) - Date.parse(v.start_date)) / 86_400_000;
+    return days <= MAX_RANGE_DAYS;
+  },
+  { message: 'El rango de fechas no puede superar los 5 años; acorta start_date/end_date.' },
+);
 
 export const tool: ToolDef = {
   name: 'get_spending_summary',
