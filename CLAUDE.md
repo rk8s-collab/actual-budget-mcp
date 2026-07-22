@@ -48,5 +48,6 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
   Las de escritura: `update_transaction`, `categorize_transactions`, `split_transaction`,
   `create_transaction`, `create_schedule`, `set_budget`, `transfer_budget`, `update_category_note`.
 - Siguiente: prueba manual de escritura de Marco en Claude Desktop (activar `ENABLE_WRITE=true`),
-  retirar `actual-budget-test` (agigante80) cuando la escritura esté validada, y decidir
-  publicación en GitHub (README bilingüe EN/ES, idioma/moneda ya configurables).
+  escritura validada con prueba real (12/12) y `actual-budget-test` retirado.
+- **Publicado en GitHub (2026-07-22)**: https://github.com/marcoaperez/actual-budget-mcp-es
+  (público, MIT, README bilingüe EN/ES, instalable con `npx github:marcoaperez/actual-budget-mcp-es`).
