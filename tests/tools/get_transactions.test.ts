@@ -44,4 +44,15 @@ describe('get_transactions', () => {
       tool.handler({ start_date: 'junio', end_date: '2026-06-30' }, { api, config: testConfig }),
     ).rejects.toThrow();
   });
+  it('rejects ids that are not UUIDs (barrera anti-inyección AQL)', async () => {
+    const api = mockApi();
+    const range = { start_date: '2026-06-01', end_date: '2026-06-30' };
+    await expect(
+      tool.handler({ ...range, account_id: "a1' OR '1'='1" }, { api, config: testConfig }),
+    ).rejects.toThrow(/UUID/);
+    await expect(
+      tool.handler({ ...range, category_id: '$notes' }, { api, config: testConfig }),
+    ).rejects.toThrow(/UUID/);
+    expect(api.runQuery).not.toHaveBeenCalled();
+  });
 });

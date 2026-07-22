@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { toCents } from '../core/money.js';
 import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
 
 const input = {
-  transaction_id: z.string().min(1),
-  category_id: z.string().optional(),
+  transaction_id: ID,
+  category_id: ID.optional(),
   payee_name: z.string().optional().describe('Payee by name (resolved/created server-side)'),
   notes: z.string().max(1000).optional(),
   date: DATE.optional(),

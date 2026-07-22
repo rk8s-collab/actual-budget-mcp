@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { toCents, moneyFields } from '../core/money.js';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const MONTH = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes en formato YYYY-MM');
 
 const input = {
   operations: z.array(z.object({
     month: MONTH,
-    category_id: z.string().min(1),
+    category_id: ID,
     amount: z.number().min(0).describe('Units to budget for the category that month'),
     carryover: z.boolean().optional().describe('Enable/disable rollover of leftover balance'),
   })).min(1).max(50),

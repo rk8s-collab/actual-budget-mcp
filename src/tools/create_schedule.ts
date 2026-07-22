@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { toCents, moneyFields } from '../core/money.js';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
 
 const input = {
   name: z.string().min(1).describe('Unique display name'),
   payee_name: z.string().min(1).describe('Existing payee, matched case-insensitively'),
-  account_id: z.string().min(1),
+  account_id: ID,
   amount: z.number().describe('Units; negative = expense'),
   date: DATE.optional().describe('One-off schedule on this date (alternative to recurrence)'),
   recurrence: z.object({

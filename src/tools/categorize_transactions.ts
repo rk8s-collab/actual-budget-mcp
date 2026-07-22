@@ -1,10 +1,10 @@
 import { z } from 'zod';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const input = {
   updates: z.array(z.object({
-    transaction_id: z.string().min(1),
-    category_id: z.string().min(1),
+    transaction_id: ID,
+    category_id: ID,
   })).min(1).max(50).describe('Máx. 50 por llamada; cada item se aplica de forma independiente'),
 };
 const schema = z.object(input);

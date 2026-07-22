@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { toCents, moneyFields } from '../core/money.js';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const MONTH = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes en formato YYYY-MM');
 
 const input = {
   month: MONTH,
-  from_category_id: z.string().min(1),
-  to_category_id: z.string().min(1),
+  from_category_id: ID,
+  to_category_id: ID,
   amount: z.number().positive().describe('Units to move'),
 };
 const schema = z.object(input).refine((v) => v.from_category_id !== v.to_category_id, {

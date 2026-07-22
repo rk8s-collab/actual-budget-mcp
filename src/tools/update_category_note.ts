@@ -1,8 +1,8 @@
 import { z } from 'zod';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const input = {
-  category_id: z.string().min(1).describe('Category UUID (from get_categories)'),
+  category_id: ID.describe('Category UUID (from get_categories)'),
   note: z.string().max(2000).describe('Note text; supports Actual goal templates like "#template 350"'),
 };
 const schema = z.object(input);

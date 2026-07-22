@@ -1,14 +1,14 @@
 import { z } from 'zod';
 import { moneyFields, toCents } from '../core/money.js';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
 
 const input = {
   start_date: DATE.describe('Start date YYYY-MM-DD'),
   end_date: DATE.describe('End date YYYY-MM-DD'),
-  account_id: z.string().optional(),
-  category_id: z.string().optional(),
+  account_id: ID.optional(),
+  category_id: ID.optional(),
   search_text: z.string().optional().describe('Substring match on payee name or notes'),
   min_amount: z.number().optional().describe('Units, e.g. -500'),
   max_amount: z.number().optional(),

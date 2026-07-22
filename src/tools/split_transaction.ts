@@ -1,13 +1,13 @@
 import { z } from 'zod';
 import { toCents, formatAmount } from '../core/money.js';
 import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
-import type { ToolDef } from '../core/types.js';
+import { ID, type ToolDef } from '../core/types.js';
 
 const input = {
-  transaction_id: z.string().min(1),
+  transaction_id: ID,
   splits: z.array(z.object({
     amount: z.number().describe('Units; same sign as the original. With adjust_last, the LAST part may be 0 (computed server-side)'),
-    category_id: z.string().min(1),
+    category_id: ID,
     notes: z.string().max(1000).optional(),
   })).min(2).describe('Parts of the split (min 2)'),
   adjust_last: z.boolean().default(false).describe('Compute the last part as the exact remainder'),
