@@ -52,9 +52,10 @@ export const tool: ToolDef = {
     }
     // payee_name se resuelve a un id: el campo crudo payee_name lo rechaza conform().
     if (a.payee_name !== undefined) {
+      const wantedName = a.payee_name!.trim().toLowerCase();
       const payees = await api.getPayees();
-      const found = (payees as any[]).find((p) => (p.name ?? '').toLowerCase() === a.payee_name!.toLowerCase());
-      fields.payee = found ? found.id : await api.createPayee({ name: a.payee_name });
+      const found = (payees as any[]).find((p) => (p.name ?? '').trim().toLowerCase() === wantedName);
+      fields.payee = found ? found.id : await api.createPayee({ name: a.payee_name!.trim() });
     }
     await api.updateTransaction(a.transaction_id, fields);
     const updated = await getTransactionById(api, a.transaction_id);

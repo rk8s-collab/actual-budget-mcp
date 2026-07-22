@@ -20,7 +20,7 @@ export const tool: ToolDef = {
     // Pre-lectura por lote: detecta hijos/padres de split e ids inexistentes antes de escribir.
     const ids = a.updates.map((u) => u.transaction_id);
     const { data: rows } = await api.runQuery(
-      api.q('transactions').filter({ id: { $oneof: ids } }).options({ splits: 'none' }).select(['id', 'is_child', 'is_parent']),
+      api.q('transactions').filter({ id: { $oneof: ids } }).options({ splits: 'all' }).select(['id', 'is_child', 'is_parent']),
     );
     const info = new Map((rows as any[]).map((r) => [r.id, r]));
     const succeeded: any[] = [];
