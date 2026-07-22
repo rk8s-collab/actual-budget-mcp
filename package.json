@@ -1,9 +1,23 @@
 {
-  "name": "actual-budget-mcp",
+  "name": "actual-budget-mcp-es",
   "version": "2.0.0-dev",
-  "description": "MCP server for Actual Budget — read/write financial assistant for LLMs",
+  "description": "MCP server for Actual Budget — LLM-ready financial assistant with correct semantics, unit conversion and real split transactions",
   "type": "module",
   "main": "dist/index.js",
+  "license": "MIT",
+  "author": "Marco Antonio Pérez",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/marcoaperez/actual-budget-mcp-es.git"
+  },
+  "keywords": [
+    "mcp",
+    "model-context-protocol",
+    "actual-budget",
+    "finance",
+    "budgeting",
+    "claude"
+  ],
   "bin": {
     "actual-budget-mcp": "dist/index.js"
   },
@@ -16,7 +30,8 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
-    "smoke": "tsx scripts/smoke.ts"
+    "smoke": "tsx scripts/smoke.ts",
+    "prepare": "npm run build"
   },
   "dependencies": {
     "@actual-app/api": "^26.7.0",

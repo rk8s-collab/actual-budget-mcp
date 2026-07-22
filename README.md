@@ -1,166 +1,152 @@
+**English** | [Español](README.es.md)
+
 # Actual Budget MCP Server
 
-Servidor MCP (Model Context Protocol) que conecta Claude Desktop / Claude.ai con una instancia self-hosted de [Actual Budget](https://actualbudget.org/). Permite consultar cuentas, transacciones, presupuestos y más directamente desde Claude usando lenguaje natural.
+An MCP (Model Context Protocol) server that connects LLMs — Claude Desktop and any MCP-capable client — to a self-hosted [Actual Budget](https://actualbudget.org/) instance. It is purpose-built for LLM consumption: correct financial semantics (transfers excluded from spending summaries, net worth including off-budget accounts), amounts converted server-side so the model never does cents math, compact outputs, fresh data via sync-with-TTL, and **real** split transactions backed by subtransactions.
 
-## Requisitos
+## Feature highlights
+
+The design rests on five pillars:
+
+- **Correct financial semantics** — transfers (`transfer_id`) are excluded from spending summaries so amounts are never double-counted, and net worth includes off-budget accounts (pensions, funds, mortgage).
+- **Server-side unit conversion** — Actual stores amounts in cents; every tool returns values already divided by 100, with an `amount_formatted` field. The LLM never does the math.
+- **Compact, LLM-friendly outputs** — responses are trimmed to what a model needs to answer, keeping token usage low.
+- **Fresh data with sync-with-TTL** — the server syncs with Actual before serving, caching the sync for a short TTL to stay fast without going stale.
+- **Real split transactions** — `split_transaction` creates genuine subtransactions in Actual, not fake notes or workarounds.
+
+## Requirements
 
 - Node.js >= 22
-- **Actual Budget** self-hosted y accesible por red
-- **Claude Desktop** o **Claude.ai** con soporte MCP
+- A self-hosted **Actual Budget** server (>= 25.x; built against API 26.7), reachable over the network
+- **Claude Desktop** or any MCP-capable client
 
-## Instalación
+## Installation
 
-El proyecto está escrito en TypeScript (v2), así que hay que compilarlo antes de usarlo:
+The project is written in TypeScript, so build it before use:
 
 ```bash
-cd ~/GITs/Actual-MCP
+git clone https://github.com/marcoaperez/actual-budget-mcp-es.git
+cd actual-budget-mcp-es
 npm install
-cp .env.example .env
-# Editar .env con tu contraseña de Actual Budget
-npm run build          # compila TypeScript a dist/
+npm run build          # compiles TypeScript to dist/
 ```
 
-Esto genera `dist/index.js`, el punto de entrada que ejecuta Claude Desktop.
+This produces `dist/index.js`, the entry point your MCP client runs.
 
-## Cómo encontrar el Sync ID
+### Finding your Sync ID
 
-1. Abre Actual Budget en el navegador
-2. Ve a **Settings** → **Advanced Settings**
-3. Busca la sección **IDs**
-4. Copia el valor de **Sync ID**
+1. Open Actual Budget in the browser
+2. Go to **Settings** → **Advanced Settings**
+3. Find the **IDs** section
+4. Copy the **Sync ID** value
 
-## Configuración en Claude Desktop
+### Claude Desktop configuration
 
-Añade esta configuración al archivo `claude_desktop_config.json`:
-
-**macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
-
-Apunta `command` a `node` y `args` al `dist/index.js` compilado (usa una ruta absoluta):
+Add this to your `claude_desktop_config.json`
+(macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`).
+Point `command` at `node` and `args` at the compiled `dist/index.js` using an absolute path:
 
 ```json
 {
   "mcpServers": {
     "actual-budget": {
       "command": "node",
-      "args": ["/Users/TU_USUARIO/GITs/Actual-MCP/dist/index.js"],
+      "args": ["/absolute/path/to/actual-budget-mcp-es/dist/index.js"],
       "env": {
         "ACTUAL_SERVER_URL": "https://actual.example.org/",
-        "ACTUAL_SERVER_PASSWORD": "tu-password",
+        "ACTUAL_SERVER_PASSWORD": "your-password",
         "ACTUAL_SYNC_ID": "00000000-0000-0000-0000-000000000000",
         "LOCALE": "es-ES",
-        "CURRENCY": "EUR"
+        "CURRENCY": "EUR",
+        "ENABLE_WRITE": "false"
       }
     }
   }
 }
 ```
 
-> Sustituye `TU_USUARIO` por tu nombre de usuario de macOS y `tu-password` por la contraseña real.
-> Recuerda ejecutar `npm run build` antes (y tras cada cambio) para regenerar `dist/`.
+Use `"LOCALE": "en-US"` and `"CURRENCY": "USD"` for US formatting, or `"es-ES"` / `"EUR"` for Spain. Set `"ENABLE_WRITE": "true"` only when you want the write tools (see below). Restart Claude Desktop after saving so it detects the new MCP server.
 
-Durante el desarrollo puedes evitar la compilación usando `tsx` directamente:
-`"command": "npx"`, `"args": ["tsx", "/ruta/absoluta/Actual-MCP/src/index.ts"]`.
+During development you can skip the build and run TypeScript directly with `tsx`:
+`"command": "npx"`, `"args": ["tsx", "/absolute/path/to/actual-budget-mcp-es/src/index.ts"]`.
 
-Tras guardar, reinicia Claude Desktop para que detecte el nuevo servidor MCP.
+## Configuration
 
-## Variables de entorno
+The first three variables are required; the rest have defaults.
 
-Las tres primeras son obligatorias; el resto tienen valores por defecto.
-
-| Variable | Obligatoria | Por defecto | Descripción |
+| Variable | Required | Default | Description |
 |---|---|---|---|
-| `ACTUAL_SERVER_URL` | Sí | — | URL del servidor Actual self-hosted |
-| `ACTUAL_SERVER_PASSWORD` | Sí | — | Contraseña del servidor Actual |
-| `ACTUAL_SYNC_ID` | Sí | — | Sync ID del presupuesto (Settings → Advanced → Sync ID) |
-| `ACTUAL_DATA_DIR` | No | `./data` | Carpeta donde se descarga la copia local del presupuesto |
-| `LOCALE` | No | `en-US` | Locale para formatear importes y fechas (ej. `es-ES`) |
-| `CURRENCY` | No | `USD` | Código ISO de moneda de 3 letras (ej. `EUR`) |
-| `SYNC_TTL_SECONDS` | No | `60` | Segundos que se cachea el sync antes de volver a sincronizar |
-| `ENABLE_WRITE` | No | `false` | Habilita las 8 tools de escritura (categorizar, splits, schedules, presupuesto, notas) |
+| `ACTUAL_SERVER_URL` | Yes | — | URL of the self-hosted Actual server |
+| `ACTUAL_SERVER_PASSWORD` | Yes | — | Actual server password |
+| `ACTUAL_SYNC_ID` | Yes | — | Budget Sync ID (Settings → Advanced → Sync ID) |
+| `ACTUAL_DATA_DIR` | No | `./data` | Folder where the local copy of the budget is downloaded |
+| `LOCALE` | No | `en-US` | Locale for formatting amounts and dates (e.g. `es-ES`) |
+| `CURRENCY` | No | `USD` | 3-letter ISO currency code (e.g. `EUR`) |
+| `SYNC_TTL_SECONDS` | No | `60` | Seconds the sync is cached before re-syncing |
+| `ENABLE_WRITE` | No | `false` | Enables the 8 write tools (categorize, splits, schedules, budget, notes) |
 
-## Herramientas disponibles
+## Tools
 
-El servidor expone 8 herramientas de solo lectura (v2):
+### Read tools (8)
 
-| Herramienta | Descripción |
+Always available.
+
+| Tool | Description |
 |---|---|
-| `get_accounts` | Cuentas con balance actual. Incluye off-budget (pensiones, fondos, hipoteca) por defecto |
-| `get_net_worth` | Patrimonio neto completo: on-budget + off-budget con desglose por cuenta |
-| `get_categories` | Grupos y categorías con sus IDs (los IDs son necesarios para las tools de escritura) |
-| `get_transactions` | Transacciones por rango de fechas con filtros opcionales (cuenta, categoría, texto, importe, sin categorizar). Excluye transferencias. Paginado (máx. 200) |
-| `get_spending_summary` | Gasto agregado por categoría, beneficiario o mes. Excluye transferencias siempre |
-| `get_budget_month` | Estado del presupuesto de un mes: to-budget, ingresos, totales y asignado/gastado/balance por categoría |
-| `get_budget_averages` | Media, mediana y máximo de gasto por categoría en los últimos N meses completos — insumo para preparar el presupuesto |
-| `get_schedules` | Repetitivos configurados en Actual (nombre, próxima fecha, importe) |
+| `get_accounts` | Accounts with current balance; includes off-budget accounts (pensions, funds, mortgage) by default |
+| `get_net_worth` | Full net worth: on-budget + off-budget with a per-account breakdown |
+| `get_categories` | Category groups and categories with their IDs (needed by the write tools) |
+| `get_transactions` | Transactions by date range with optional filters (account, category, text, amount, uncategorized). Excludes transfers. Paginated (max 200) |
+| `get_spending_summary` | Spending aggregated by category, payee or month. Always excludes transfers |
+| `get_budget_month` | A month's budget state: to-budget, income, totals and budgeted/spent/balance per category |
+| `get_budget_averages` | Mean, median and max spending per category over the last N full months — input for preparing the budget |
+| `get_schedules` | Scheduled/recurring transactions configured in Actual (name, next date, amount) |
 
-## Herramientas de escritura
+### Write tools (8)
 
-Con `ENABLE_WRITE=true` el servidor expone además estas 8 herramientas de escritura:
+Registered only when `ENABLE_WRITE=true`.
 
-| Herramienta | Descripción |
+| Tool | Description |
 |---|---|
-| `update_transaction` | Corregir un movimiento (importe, categoría, beneficiario, notas, fecha) |
-| `categorize_transactions` | Categorizar en lote (máx. 50), con resultado por elemento |
-| `split_transaction` | Dividir un movimiento en partes reales — reemplaza la transacción (nuevo id) |
-| `create_transaction` | Apuntar un gasto/ingreso, con splits opcionales en la creación |
-| `create_schedule` | Crear un repetitivo (schedule) |
-| `set_budget` | Asignar presupuesto en lote a varias categorías de un mes |
-| `transfer_budget` | Mover presupuesto asignado entre categorías |
-| `update_category_note` | Notas de categoría y plantillas de objetivos (templates) |
+| `update_transaction` | Fix a transaction (amount, category, payee, notes, date) |
+| `categorize_transactions` | Categorize in bulk (max 50), with a per-item result |
+| `split_transaction` | Split a transaction into real parts — replaces the transaction (new id) |
+| `create_transaction` | Record an expense/income, with optional splits at creation |
+| `create_schedule` | Create a scheduled/recurring transaction |
+| `set_budget` | Assign budget in bulk to several categories of a month |
+| `transfer_budget` | Move assigned budget between categories |
+| `update_category_note` | Category notes and goal templates |
 
-> **Escritura desactivada por defecto.** Las tools de escritura solo aparecen si defines `ENABLE_WRITE=true` en el bloque `env` de `claude_desktop_config.json` (y reinicias Claude Desktop).
->
-> - Los **importes se dan en unidades** de la moneda configurada (euros, no céntimos); el servidor hace la conversión.
-> - `split_transaction` **reemplaza** la transacción original por una nueva con subtransacciones, así que el movimiento resultante tiene un **id nuevo**.
+> **Notes on the write tools**
+> - They only appear when `ENABLE_WRITE=true` is set in the `env` block (restart the client after changing it).
+> - **Input amounts are in currency units** (euros/dollars, not cents); the server handles the conversion.
+> - `split_transaction` **replaces** the original transaction with a new one carrying subtransactions, so the resulting transaction has a **new id**.
 
-## Ejemplos de uso con Claude
+## Safety
 
-Una vez configurado, puedes preguntar cosas como:
+- **No delete tools** — the server cannot remove transactions, accounts or budgets.
+- **Write disabled by default** — write tools are never registered unless `ENABLE_WRITE=true`.
+- **Split guards** — the write tools guard against editing split parts or split parents directly.
+- Never commit your `.env`. The Actual password lives only in your local `.env` or the client config.
 
-- "¿Cuánto he gastado este mes en restaurantes?"
-- "¿Cuál es mi patrimonio neto actual?"
-- "Muéstrame las transacciones de la última semana"
-- "¿Cómo van mis presupuestos de enero y febrero?"
-- "¿Cuáles son mis mayores gastos del último trimestre?"
-
-Claude usará automáticamente las herramientas MCP para consultar tus datos reales de Actual Budget.
-
-## Desarrollo
-
-### Ejecutar manualmente
+## Development
 
 ```bash
-npm run dev     # ejecuta src/index.ts con tsx (sin compilar)
-npm start       # ejecuta dist/index.js (requiere npm run build antes)
+npm test        # full suite with Vitest (87 tests)
+npm run dev     # runs src/index.ts with tsx (no build)
+npm run smoke   # manual check against the real Actual server (requires .env; not part of CI)
 ```
 
-El servidor se comunica por stdio (stdin/stdout), así que al ejecutarlo manualmente no verás output interactivo — los logs van a stderr.
+The server talks over stdio (stdin/stdout), so running it manually shows no interactive output — logs go to stderr.
 
-### Tests y smoke
+### Adding a new tool
 
-```bash
-npm test        # suite completa con Vitest
-npm run smoke   # comprobación manual contra el servidor Actual real (requiere .env)
-```
+1. Create a file in `src/tools/my_new_tool.ts`
+2. Export a `ToolDef` (`name`, `description`, `readOnly`, `inputSchema` with Zod, `handler`)
+3. Import and register it in the `allTools` array of `src/tools/index.ts`
 
-El smoke imprime el número de cuentas y el patrimonio neto para contrastarlos con la UI de Actual. No forma parte de CI.
+The `handler(input, ctx)` receives an initialized `{ api, config }` context; use `moneyFields`/`toUnits` from `src/core/money.js` to always return amounts in units (never cents).
 
-### Añadir una nueva herramienta
+## License
 
-1. Crea un archivo en `src/tools/mi_nueva_herramienta.ts`
-2. Exporta una `ToolDef` (`name`, `description`, `readOnly`, `inputSchema` con Zod, `handler`)
-3. Importa y registra la tool en el array `allTools` de `src/tools/index.ts`
-
-El `handler(input, ctx)` recibe el contexto `{ api, config }` ya inicializado; usa `moneyFields`/`toUnits` de `src/core/money.js` para devolver siempre importes en unidades (nunca céntimos).
-
-## Seguridad
-
-- **NUNCA** commitear el archivo `.env` al repositorio
-- La contraseña de Actual Budget va solo en `.env` local o en la config de Claude Desktop
-- El `.gitignore` ya excluye `.env`, `node_modules/` y datos locales
-
-## Notas técnicas
-
-- Los importes de Actual están en céntimos; las tools los devuelven SIEMPRE convertidos a unidades de la moneda configurada (÷ 100 en el servidor, campos amount y amount_formatted).
-- Las transferencias entre cuentas se identifican por `transfer_id` y se excluyen de los resúmenes para no doblar importes.
-- La primera conexión a Actual Budget puede tardar unos segundos mientras descarga el presupuesto.
+MIT — see [LICENSE](LICENSE). Copyright (c) 2026 Marco Antonio Pérez.
