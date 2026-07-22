@@ -1,5 +1,6 @@
 // index.ts — catálogo de tools. Cada task de tool añade su import aquí.
 import type { ToolDef } from '../core/types.js';
 import { tool as getAccounts } from './get_accounts.js';
+import { tool as getNetWorth } from './get_net_worth.js';
 
-export const allTools: ToolDef[] = [getAccounts];
+export const allTools: ToolDef[] = [getAccounts, getNetWorth];
