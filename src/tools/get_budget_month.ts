@@ -1,0 +1,40 @@
+import { z } from 'zod';
+import { moneyFields } from '../core/money.js';
+import type { ToolDef } from '../core/types.js';
+
+const input = {
+  month: z.string().regex(/^\d{4}-\d{2}$/, 'Mes en formato YYYY-MM'),
+  only_active: z.boolean().default(true).describe('Only categories with budgeted, spent or balance != 0'),
+};
+const schema = z.object(input);
+
+export const tool: ToolDef = {
+  name: 'get_budget_month',
+  description: 'Budget status for a month: to-budget, income, totals and per-category budgeted/spent/balance. Category ids included for set_budget.',
+  readOnly: true,
+  inputSchema: input,
+  handler: async (raw, { api, config }) => {
+    const a = schema.parse(raw ?? {});
+    const fmt = (c: number) => moneyFields(c ?? 0, config.locale, config.currency);
+    const m = await api.getBudgetMonth(a.month);
+
+    const categories = [];
+    for (const g of m.categoryGroups ?? []) {
+      if (g.is_income) continue;
+      for (const c of g.categories ?? []) {
+        const active = (c.budgeted ?? 0) !== 0 || (c.spent ?? 0) !== 0 || (c.balance ?? 0) !== 0;
+        if (a.only_active && !active) continue;
+        categories.push({
+          id: c.id, name: c.name, group: g.name,
+          budgeted: fmt(c.budgeted), spent: fmt(c.spent), balance: fmt(c.balance),
+        });
+      }
+    }
+    return {
+      month: m.month,
+      to_budget: fmt(m.toBudget), income: fmt(m.totalIncome),
+      budgeted: fmt(m.totalBudgeted), spent: fmt(m.totalSpent),
+      categories,
+    };
+  },
+};
