@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { collectTools } from '../../src/core/tool-registry.js';
+import { allTools } from '../../src/tools/index.js';
 import type { ToolDef } from '../../src/core/types.js';
 
 const mk = (name: string, readOnly: boolean): ToolDef => ({
@@ -16,5 +17,13 @@ describe('collectTools', () => {
   });
   it('rejects invalid tool names', () => {
     expect(() => collectTools([mk('bad.name', true)], true)).toThrowError(/bad\.name/);
+  });
+});
+
+describe('catalog (plan 1)', () => {
+  it('ships exactly 8 read tools', () => {
+    expect(allTools).toHaveLength(8);
+    expect(allTools.every((t) => t.readOnly)).toBe(true);
+    expect(collectTools(allTools, false)).toHaveLength(8);
   });
 });

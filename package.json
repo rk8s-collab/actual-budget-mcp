@@ -12,7 +12,8 @@
     "dev": "tsx src/index.ts",
     "start": "node dist/index.js",
     "test": "vitest run",
-    "test:watch": "vitest"
+    "test:watch": "vitest",
+    "smoke": "tsx scripts/smoke.ts"
   },
   "dependencies": {
     "@actual-app/api": "^26.7.0",
