@@ -34,5 +34,6 @@ describe('catalog', () => {
   it('registra las tools de escritura en el catálogo', () => {
     expect(allTools.map((t) => t.name)).toContain('update_transaction');
     expect(allTools.map((t) => t.name)).toContain('categorize_transactions');
+    expect(allTools.map((t) => t.name)).toContain('split_transaction');
   });
 });
