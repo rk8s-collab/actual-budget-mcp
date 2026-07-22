@@ -44,8 +44,9 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
   de stdout vive en `src/core/log-redirect.ts` como PRIMER import; `balance_current` es null en
   cuentas manuales — los saldos se calculan con AQL agrupado en `src/core/balances.ts`;
   en agregados AQL los campos llevan `$` (`{$sum: '$amount'}`).
-- Siguiente: **Plan 2** — las 8 tools de escritura del SPEC (categorizar, split real con
-  subtransacciones, schedules, presupuesto, notas). Decisión pendiente antes de los splits:
-  redondeo half-away-from-zero en `money.ts` para medios céntimos negativos.
-- `actual-budget-test` (agigante80) sigue instalado para comparar; retirar cuando Plan 2 cubra
-  la escritura.
+- **Plan 2 completado (2026-07-22)**: 16 tools (8 lectura + 8 escritura tras `ENABLE_WRITE`).
+  Las de escritura: `update_transaction`, `categorize_transactions`, `split_transaction`,
+  `create_transaction`, `create_schedule`, `set_budget`, `transfer_budget`, `update_category_note`.
+- Siguiente: prueba manual de escritura de Marco en Claude Desktop (activar `ENABLE_WRITE=true`),
+  retirar `actual-budget-test` (agigante80) cuando la escritura esté validada, y decidir
+  publicación en GitHub (README bilingüe EN/ES, idioma/moneda ya configurables).

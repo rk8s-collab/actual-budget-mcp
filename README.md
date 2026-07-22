@@ -76,7 +76,7 @@ Las tres primeras son obligatorias; el resto tienen valores por defecto.
 | `LOCALE` | No | `en-US` | Locale para formatear importes y fechas (ej. `es-ES`) |
 | `CURRENCY` | No | `USD` | Código ISO de moneda de 3 letras (ej. `EUR`) |
 | `SYNC_TTL_SECONDS` | No | `60` | Segundos que se cachea el sync antes de volver a sincronizar |
-| `ENABLE_WRITE` | No | `false` | Habilita las tools de escritura (Plan 2; aún no implementadas) |
+| `ENABLE_WRITE` | No | `false` | Habilita las 8 tools de escritura (categorizar, splits, schedules, presupuesto, notas) |
 
 ## Herramientas disponibles
 
@@ -92,6 +92,26 @@ El servidor expone 8 herramientas de solo lectura (v2):
 | `get_budget_month` | Estado del presupuesto de un mes: to-budget, ingresos, totales y asignado/gastado/balance por categoría |
 | `get_budget_averages` | Media, mediana y máximo de gasto por categoría en los últimos N meses completos — insumo para preparar el presupuesto |
 | `get_schedules` | Repetitivos configurados en Actual (nombre, próxima fecha, importe) |
+
+## Herramientas de escritura
+
+Con `ENABLE_WRITE=true` el servidor expone además estas 8 herramientas de escritura:
+
+| Herramienta | Descripción |
+|---|---|
+| `update_transaction` | Corregir un movimiento (importe, categoría, beneficiario, notas, fecha) |
+| `categorize_transactions` | Categorizar en lote (máx. 50), con resultado por elemento |
+| `split_transaction` | Dividir un movimiento en partes reales — reemplaza la transacción (nuevo id) |
+| `create_transaction` | Apuntar un gasto/ingreso, con splits opcionales en la creación |
+| `create_schedule` | Crear un repetitivo (schedule) |
+| `set_budget` | Asignar presupuesto en lote a varias categorías de un mes |
+| `transfer_budget` | Mover presupuesto asignado entre categorías |
+| `update_category_note` | Notas de categoría y plantillas de objetivos (templates) |
+
+> **Escritura desactivada por defecto.** Las tools de escritura solo aparecen si defines `ENABLE_WRITE=true` en el bloque `env` de `claude_desktop_config.json` (y reinicias Claude Desktop).
+>
+> - Los **importes se dan en unidades** de la moneda configurada (euros, no céntimos); el servidor hace la conversión.
+> - `split_transaction` **reemplaza** la transacción original por una nueva con subtransacciones, así que el movimiento resultante tiene un **id nuevo**.
 
 ## Ejemplos de uso con Claude
 

@@ -23,13 +23,13 @@ describe('collectTools', () => {
   });
 });
 
-describe('catalog', () => {
-  it('keeps the 8 plan-1 read tools and gates write tools out when enableWrite=false', () => {
-    const readTools = allTools.filter((t) => t.readOnly);
-    expect(readTools).toHaveLength(8);
-    const gated = collectTools(allTools, false);
-    expect(gated).toHaveLength(8);
-    expect(gated.every((t) => t.readOnly)).toBe(true);
+describe('catalog (plan 2)', () => {
+  it('ships 8 read + 8 write tools, write-gated', () => {
+    expect(allTools).toHaveLength(16);
+    expect(allTools.filter((t) => t.readOnly)).toHaveLength(8);
+    expect(collectTools(allTools, false)).toHaveLength(8);
+    expect(collectTools(allTools, true)).toHaveLength(16);
+    expect(collectTools(allTools, false).every((t) => t.readOnly)).toBe(true);
   });
   it('registra las tools de escritura en el catálogo', () => {
     expect(allTools.map((t) => t.name)).toContain('update_transaction');

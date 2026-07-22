@@ -114,7 +114,7 @@ Registered only when `ENABLE_WRITE=true`. All write inputs take amounts in **uni
 
 Notes:
 
-- **`split_transaction`** validates in integer cents that parts sum exactly to the transaction total; on mismatch it rejects and reports the difference so the LLM can retry. `adjust_last: true` makes the server compute the last part ("120 to groceries, the rest to home"). Implemented with the official `subtransactions` API.
+- **`split_transaction`** validates in integer cents that parts sum exactly to the transaction total; on mismatch it rejects and reports the difference so the LLM can retry. `adjust_last: true` makes the server compute the last part ("120 to groceries, the rest to home"). Implemented as safe replace via the official `subtransactions` create API (`addTransactions`), since the update API does not accept subtransactions: create the split copy first, then delete the original — a mid-failure can only leave a visible duplicate, never lose data. The split transaction gets a new id.
 - **`create_transaction` accepts `splits`** so a dictated supermarket ticket is created already split in one call.
 - **`payee_name` instead of payee UUID** — the API resolves/creates payees by name. Categories go by ID (names repeat across groups), which the LLM already has from `get_categories`.
 - **No `dry_run`**: Claude Desktop's per-tool approval plus state-echoing responses are the safety net; a dry-run flag would double the friction.
