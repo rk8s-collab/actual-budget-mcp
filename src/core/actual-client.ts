@@ -24,14 +24,19 @@ export class ActualClient {
     if (!this.initialized) {
       if (!this.initPromise) {
         this.initPromise = (async () => {
-          fs.mkdirSync(this.config.dataDir, { recursive: true });
-          await this.api.init({
-            dataDir: this.config.dataDir,
-            serverURL: this.config.serverUrl,
-            password: this.config.password,
-          });
-          await this.api.downloadBudget(this.config.syncId);
-          this.initialized = true;
+          try {
+            fs.mkdirSync(this.config.dataDir, { recursive: true });
+            await this.api.init({
+              dataDir: this.config.dataDir,
+              serverURL: this.config.serverUrl,
+              password: this.config.password,
+            });
+            await this.api.downloadBudget(this.config.syncId);
+            this.initialized = true;
+          } catch (err) {
+            this.initPromise = null; // init fallido: permitir reintento en la siguiente llamada
+            throw err;
+          }
         })();
       }
       await this.initPromise;

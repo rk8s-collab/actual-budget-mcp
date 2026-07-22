@@ -64,4 +64,13 @@ describe('ActualClient.ensureReady', () => {
     expect(api.init).toHaveBeenCalledTimes(1);
     expect(api.downloadBudget).toHaveBeenCalledTimes(1);
   });
+  it('retries init after a failed first attempt', async () => {
+    const api = mockApi();
+    (api.init as any).mockRejectedValueOnce(new Error('offline'));
+    const c = new ActualClient(api, cfg, () => 0);
+    await expect(c.ensureReady()).rejects.toThrow(/offline/);
+    await c.ensureReady(); // debe reintentar, no re-lanzar la promesa cacheada
+    expect(api.init).toHaveBeenCalledTimes(2);
+    expect(api.downloadBudget).toHaveBeenCalledTimes(1);
+  });
 });
