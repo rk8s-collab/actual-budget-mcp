@@ -3,10 +3,10 @@ import { tool } from '../../src/tools/get_spending_summary.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
 
 const rows = [
-  { 'category.name': 'Alimentacion', 'category.group.is_income': false, 'payee.name': 'Mercadona', date: '2026-06-03', amount: -100000, transfer_id: null },
+  { 'category.name': 'Alimentacion', 'category.group.is_income': false, 'payee.name': 'Mercadona', date: '2026-06-03', amount: -112340, transfer_id: null },
   { 'category.name': 'Alimentacion', 'category.group.is_income': false, 'payee.name': 'Lidl', date: '2026-06-20', amount: -63210, transfer_id: null },
-  { 'category.name': 'Ropa', 'category.group.is_income': false, 'payee.name': 'Zara', date: '2026-06-10', amount: -8997, transfer_id: null },
-  { 'category.name': 'Salary', 'category.group.is_income': true, 'payee.name': 'Taiko', date: '2026-06-01', amount: 300000, transfer_id: null },
+  { 'category.name': 'Ropa', 'category.group.is_income': false, 'payee.name': 'Zara', date: '2026-06-10', amount: -8420, transfer_id: null },
+  { 'category.name': 'Salary', 'category.group.is_income': true, 'payee.name': 'Taiko', date: '2026-06-01', amount: 350000, transfer_id: null },
 ];
 
 describe('get_spending_summary', () => {
@@ -31,6 +31,6 @@ describe('get_spending_summary', () => {
       { api, config: testConfig },
     );
     expect(r.rows).toHaveLength(1);
-    expect(r.others).toMatchObject({ amount: 89.97, transaction_count: 1 });
+    expect(r.others).toMatchObject({ amount: 84.20, transaction_count: 1 });
   });
 });

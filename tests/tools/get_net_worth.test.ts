@@ -17,14 +17,14 @@ describe('get_net_worth', () => {
           { account: 'a1', balance: 1234567 },
           { account: 'a2', balance: 5000000 },
           { account: 'a3', balance: -12000000 },
-          { account: 'a4', balance: 99999 },
+          { account: 'a4', balance: 77777 },
         ],
       }),
     });
     const r: any = await tool.handler({}, { api, config: testConfig });
     expect(r.net_worth.amount).toBeCloseTo(-57654.33, 2);   // 12345.67 + 50000.00 - 120000.00
     expect(r.on_budget.total.amount).toBeCloseTo(12345.67, 2);
-    expect(r.off_budget.total.amount).toBeCloseTo(-59044.0, 1);
+    expect(r.off_budget.total.amount).toBeCloseTo(-70000.0, 1);
     expect(r.off_budget.accounts).toHaveLength(2);
   });
 });

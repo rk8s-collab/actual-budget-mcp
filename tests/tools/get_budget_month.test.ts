@@ -3,7 +3,7 @@ import { tool } from '../../src/tools/get_budget_month.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
 
 const budgetMonth = {
-  month: '2026-07', toBudget: -5000000, totalIncome: 48400, totalBudgeted: 0, totalSpent: -200930,
+  month: '2026-07', toBudget: -5000000, totalIncome: 60000, totalBudgeted: 0, totalSpent: -150000,
   categoryGroups: [
     { id: 'g1', name: 'Comida', is_income: false, categories: [
       { id: 'c1', name: 'Alimentacion', budgeted: 0, spent: -45000, balance: -45000 },

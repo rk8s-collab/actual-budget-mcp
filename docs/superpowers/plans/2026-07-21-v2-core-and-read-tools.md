@@ -857,13 +857,13 @@ describe('get_net_worth', () => {
         { id: 'a1', name: 'Banco', offbudget: false, closed: false, balance_current: 1234567 },
         { id: 'a2', name: 'Pensión', offbudget: true, closed: false, balance_current: 5000000 },
         { id: 'a3', name: 'Hipoteca', offbudget: true, closed: false, balance_current: -12000000 },
-        { id: 'a4', name: 'Cerrada', offbudget: false, closed: true, balance_current: 99999 },
+        { id: 'a4', name: 'Cerrada', offbudget: false, closed: true, balance_current: 77777 },
       ],
     });
     const r: any = await tool.handler({}, { api, config: testConfig });
     expect(r.net_worth.amount).toBeCloseTo(-57654.33, 2);   // 12345.67 + 50000.00 - 120000.00
     expect(r.on_budget.total.amount).toBeCloseTo(12345.67, 2);
-    expect(r.off_budget.total.amount).toBeCloseTo(-59044.0, 1);
+    expect(r.off_budget.total.amount).toBeCloseTo(-70000.0, 1);
     expect(r.off_budget.accounts).toHaveLength(2);
   });
 });
@@ -1189,10 +1189,10 @@ import { tool } from '../../src/tools/get_spending_summary.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
 
 const rows = [
-  { 'category.name': 'Alimentacion', 'category.group.is_income': false, 'payee.name': 'Mercadona', date: '2026-06-03', amount: -100000, transfer_id: null },
+  { 'category.name': 'Alimentacion', 'category.group.is_income': false, 'payee.name': 'Mercadona', date: '2026-06-03', amount: -112340, transfer_id: null },
   { 'category.name': 'Alimentacion', 'category.group.is_income': false, 'payee.name': 'Lidl', date: '2026-06-20', amount: -63210, transfer_id: null },
-  { 'category.name': 'Ropa', 'category.group.is_income': false, 'payee.name': 'Zara', date: '2026-06-10', amount: -8997, transfer_id: null },
-  { 'category.name': 'Salary', 'category.group.is_income': true, 'payee.name': 'Taiko', date: '2026-06-01', amount: 300000, transfer_id: null },
+  { 'category.name': 'Ropa', 'category.group.is_income': false, 'payee.name': 'Zara', date: '2026-06-10', amount: -8420, transfer_id: null },
+  { 'category.name': 'Salary', 'category.group.is_income': true, 'payee.name': 'Taiko', date: '2026-06-01', amount: 350000, transfer_id: null },
 ];
 
 describe('get_spending_summary', () => {
@@ -1217,7 +1217,7 @@ describe('get_spending_summary', () => {
       { api, config: testConfig },
     );
     expect(r.rows).toHaveLength(1);
-    expect(r.others).toMatchObject({ amount: 89.97, transaction_count: 1 });
+    expect(r.others).toMatchObject({ amount: 84.20, transaction_count: 1 });
   });
 });
 ```
@@ -1326,7 +1326,7 @@ import { tool } from '../../src/tools/get_budget_month.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
 
 const budgetMonth = {
-  month: '2026-07', toBudget: -5000000, totalIncome: 48400, totalBudgeted: 0, totalSpent: -200930,
+  month: '2026-07', toBudget: -5000000, totalIncome: 60000, totalBudgeted: 0, totalSpent: -150000,
   categoryGroups: [
     { id: 'g1', name: 'Comida', is_income: false, categories: [
       { id: 'c1', name: 'Alimentacion', budgeted: 0, spent: -45000, balance: -45000 },
