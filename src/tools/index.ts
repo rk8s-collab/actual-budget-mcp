@@ -2,5 +2,6 @@
 import type { ToolDef } from '../core/types.js';
 import { tool as getAccounts } from './get_accounts.js';
 import { tool as getNetWorth } from './get_net_worth.js';
+import { tool as getCategories } from './get_categories.js';
 
-export const allTools: ToolDef[] = [getAccounts, getNetWorth];
+export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories];
