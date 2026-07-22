@@ -27,3 +27,18 @@ describe('money', () => {
     expect(moneyFields(12000, 'en-US', 'USD')).toEqual({ amount: 120, amount_formatted: '$120.00' });
   });
 });
+
+describe('half-away-from-zero (decisión 2026-07-22)', () => {
+  it('rounds negative half cents away from zero', () => {
+    expect(toCents(-0.015)).toBe(-2);   // Math.round daría -1
+    expect(toCents(0.015)).toBe(2);
+    expect(toCents(-0.025)).toBe(-3);   // Math.round daría -2
+  });
+  it('negative round-trip is stable', () => {
+    expect(toCents(toUnits(-33333))).toBe(-33333);
+  });
+  it('does not disturb exact values', () => {
+    expect(toCents(-19.99)).toBe(-1999);
+    expect(toUnits(-2305)).toBe(-23.05);
+  });
+});

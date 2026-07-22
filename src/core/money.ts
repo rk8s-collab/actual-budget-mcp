@@ -1,11 +1,17 @@
 // money.ts — única frontera de conversión céntimos<->unidades. Nada fuera de
 // este módulo convierte importes.
+// Redondeo half-away-from-zero: -1,5 → -2 (Math.round daría -1). Decisión 2026-07-22,
+// necesario para splits proporcionales con importes negativos.
+function roundHalfAwayFromZero(n: number): number {
+  return Math.sign(n) * Math.round(Math.abs(n));
+}
+
 export function toUnits(cents: number): number {
-  return Math.round(cents) / 100;
+  return roundHalfAwayFromZero(cents) / 100;
 }
 
 export function toCents(units: number): number {
-  return Math.round(units * 100);
+  return roundHalfAwayFromZero(units * 100);
 }
 
 export function formatAmount(cents: number, locale: string, currency: string): string {
