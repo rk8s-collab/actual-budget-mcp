@@ -1,8 +1,5 @@
 #!/usr/bin/env node
-// stdout es el canal MCP: redirigir console.log ANTES de cargar nada.
-const origLog = console.log;
-console.log = (...args: unknown[]) => console.error('[log]', ...args);
-
+import './core/log-redirect.js';
 import 'dotenv/config';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as api from '@actual-app/api';
