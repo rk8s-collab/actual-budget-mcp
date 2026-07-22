@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { moneyFields } from '../core/money.js';
+import { getAccountBalances } from '../core/balances.js';
 import type { ToolDef } from '../core/types.js';
 
 const input = {
@@ -16,6 +17,7 @@ export const tool: ToolDef = {
   handler: async (raw, { api, config }) => {
     const args = schema.parse(raw ?? {});
     const all = await api.getAccounts();
+    const balances = await getAccountBalances(api);
     const accounts = all
       .filter((a: any) => (args.include_closed || !a.closed) && (args.include_off_budget || !a.offbudget))
       .map((a: any) => ({
@@ -23,7 +25,7 @@ export const tool: ToolDef = {
         name: a.name,
         on_budget: !a.offbudget,
         closed: !!a.closed,
-        ...moneyFields(a.balance_current ?? 0, config.locale, config.currency),
+        ...moneyFields(balances.get(a.id) ?? 0, config.locale, config.currency),
       }));
     return { accounts, total_count: accounts.length };
   },

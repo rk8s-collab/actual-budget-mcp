@@ -6,11 +6,20 @@ describe('get_net_worth', () => {
   it('includes off-budget (pensions, mortgage) and excludes closed', async () => {
     const api = mockApi({
       getAccounts: async () => [
-        { id: 'a1', name: 'Banco', offbudget: false, closed: false, balance_current: 1234567 },
-        { id: 'a2', name: 'Pensión', offbudget: true, closed: false, balance_current: 5000000 },
-        { id: 'a3', name: 'Hipoteca', offbudget: true, closed: false, balance_current: -12000000 },
-        { id: 'a4', name: 'Cerrada', offbudget: false, closed: true, balance_current: 99999 },
+        { id: 'a1', name: 'Banco', offbudget: false, closed: false },
+        { id: 'a2', name: 'Pensión', offbudget: true, closed: false },
+        { id: 'a3', name: 'Hipoteca', offbudget: true, closed: false },
+        { id: 'a4', name: 'Cerrada', offbudget: false, closed: true },
       ],
+      // Saldos de ejemplo vía AQL. a4 aparece pero está cerrada => no debe contar.
+      runQuery: async () => ({
+        data: [
+          { account: 'a1', balance: 1234567 },
+          { account: 'a2', balance: 5000000 },
+          { account: 'a3', balance: -12000000 },
+          { account: 'a4', balance: 99999 },
+        ],
+      }),
     });
     const r: any = await tool.handler({}, { api, config: testConfig });
     expect(r.net_worth.amount).toBeCloseTo(-57654.33, 2);   // 12345.67 + 50000.00 - 120000.00
