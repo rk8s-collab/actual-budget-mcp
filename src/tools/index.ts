@@ -4,5 +4,6 @@ import { tool as getAccounts } from './get_accounts.js';
 import { tool as getNetWorth } from './get_net_worth.js';
 import { tool as getCategories } from './get_categories.js';
 import { tool as getTransactions } from './get_transactions.js';
+import { tool as getSpendingSummary } from './get_spending_summary.js';
 
-export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions];
+export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary];
