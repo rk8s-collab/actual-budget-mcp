@@ -8,11 +8,15 @@ const T_PARENT = '22222222-2222-4222-8222-222222222222';
 const T_CHILD = '33333333-3333-4333-8333-333333333333';
 const T_MISSING = '99999999-9999-4999-8999-999999999999';
 const C9 = 'cccccccc-9999-4999-8999-999999999999';
+const C_GHOST = 'cccccccc-0000-4000-8000-000000000000';
+// Grupos de categorías del presupuesto: sólo C9 existe.
+const GROUPS = [{ id: 'g1', name: 'Gastos', is_income: false, categories: [{ id: C9, name: 'Alimentacion' }] }];
 
 describe('update_transaction', () => {
   it('converts amount to cents, passes only provided fields, echoes result', async () => {
     const api = mockApi({
       runQuery: async () => ({ data: [{ id: T1, date: '2026-07-01', account: 'a1', category: C9, amount: -4550 }] }),
+      getCategoryGroups: async () => GROUPS,
     });
     const r: any = await tool.handler(
       { transaction_id: T1, category_id: C9, amount: -45.5 },
@@ -76,6 +80,22 @@ describe('update_transaction', () => {
     await tool.handler({ transaction_id: T1, payee_name: 'Nueva Tienda' }, { api, config: testConfig });
     expect(api.createPayee).toHaveBeenCalledWith({ name: 'Nueva Tienda' });
     expect(api.updateTransaction).toHaveBeenCalledWith(T1, { payee: 'p-new' });
+  });
+  it('rejects a well-formed but non-existent category before writing', async () => {
+    const api = mockApi({
+      runQuery: async () => ({ data: [{ id: T1, date: '2026-07-01', account: 'a1', amount: -4550 }] }),
+      getCategoryGroups: async () => GROUPS,
+    });
+    await expect(tool.handler({ transaction_id: T1, category_id: C_GHOST }, { api, config: testConfig }))
+      .rejects.toThrow(C_GHOST);
+    expect(api.updateTransaction).not.toHaveBeenCalled();
+  });
+  it('does not fetch the category index when no category_id is given', async () => {
+    const api = mockApi({
+      runQuery: async () => ({ data: [{ id: T1, date: '2026-07-01', account: 'a1', amount: -4550 }] }),
+    });
+    await tool.handler({ transaction_id: T1, notes: 'x' }, { api, config: testConfig });
+    expect(api.getCategoryGroups).not.toHaveBeenCalled();
   });
   it('is write-gated', () => {
     expect(tool.readOnly).toBe(false);

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents } from '../core/money.js';
 import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
@@ -49,6 +50,13 @@ export const tool: ToolDef = {
           `La transacción ${a.transaction_id} es el padre de un split: importe y categoría viven en las partes; usa split_transaction para redividirla (notas, fecha, cleared y pagador sí se pueden editar aquí)`,
         );
       }
+    }
+    // Actual acepta cualquier id de categoría con forma de UUID y deja el movimiento
+    // sin categorizar en silencio: validamos antes de escribir. Sólo se consulta el
+    // índice si realmente viene category_id.
+    if (a.category_id !== undefined) {
+      const cats = await getCategoryIndex(api);
+      if (!cats.has(a.category_id)) throw new Error(categoryNotFound(a.category_id));
     }
     // payee_name se resuelve a un id: el campo crudo payee_name lo rechaza conform().
     if (a.payee_name !== undefined) {

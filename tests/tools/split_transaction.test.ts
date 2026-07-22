@@ -7,6 +7,12 @@ const T1 = '11111111-1111-4111-8111-111111111111';
 const C1 = 'cccccccc-1111-4111-8111-111111111111';
 const C2 = 'cccccccc-2222-4222-8222-222222222222';
 
+const C_GHOST = 'cccccccc-0000-4000-8000-000000000000';
+// Grupos de categorías del presupuesto: sólo C1 y C2 existen.
+const GROUPS = [{ id: 'g1', name: 'Gastos', is_income: false, categories: [
+  { id: C1, name: 'Alimentacion' }, { id: C2, name: 'Ocio' },
+] }];
+
 const original = { id: T1, date: '2026-07-10', account: 'a1', payee: 'p1', amount: -18000, notes: 'super', cleared: true, transfer_id: null, is_parent: false };
 const newParent = { id: 't9', date: '2026-07-10', account: 'a1', payee: 'p1', amount: -18000, notes: 'super',
   subtransactions: [{ amount: -12000, category: C1 }, { amount: -6000, category: C2 }] };
@@ -14,6 +20,7 @@ const newParent = { id: 't9', date: '2026-07-10', account: 'a1', payee: 'p1', am
 function apiForSplit() {
   let call = 0;
   return mockApi({
+    getCategoryGroups: vi.fn(async () => GROUPS),
     runQuery: vi.fn(async () => {
       call += 1;
       if (call === 1) return { data: [original] };                      // pre-read
@@ -79,5 +86,20 @@ describe('split_transaction', () => {
       { transaction_id: T1, splits: [{ amount: -180, category_id: C1 }] },
       { api, config: testConfig },
     )).rejects.toThrow(/transferencia/i);
+  });
+  it('rejects a well-formed but non-existent category in any part, before writing', async () => {
+    const api = mockApi({
+      getCategoryGroups: async () => GROUPS,
+      runQuery: async () => ({ data: [original] }),
+    });
+    await expect(tool.handler(
+      { transaction_id: T1, splits: [
+        { amount: -120, category_id: C1 },
+        { amount: -60, category_id: C_GHOST },
+      ] },
+      { api, config: testConfig },
+    )).rejects.toThrow(C_GHOST);
+    expect(api.addTransactions).not.toHaveBeenCalled();
+    expect(api.deleteTransaction).not.toHaveBeenCalled();
   });
 });

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
 import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
@@ -46,6 +47,13 @@ export const tool: ToolDef = {
       throw new Error(
         `Las partes difieren del total: suman ${formatAmount(sum, config.locale, config.currency)} y el movimiento es ${formatAmount(totalCents, config.locale, config.currency)} (${word} ${formatAmount(Math.abs(diff), config.locale, config.currency)}). Ajusta las partes o usa adjust_last=true`,
       );
+    }
+
+    // Validar TODAS las categorías antes de tocar nada: un id inexistente dejaría
+    // la parte sin categoría en silencio, y el split ya no es reversible sin trabajo.
+    const cats = await getCategoryIndex(api);
+    for (const p of parts) {
+      if (!cats.has(p.category)) throw new Error(categoryNotFound(p.category));
     }
 
     // Crear primero, borrar después: un fallo intermedio deja un duplicado visible, nunca pérdida de datos.
