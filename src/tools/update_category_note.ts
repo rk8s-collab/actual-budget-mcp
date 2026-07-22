@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { ID, type ToolDef } from '../core/types.js';
 
 const input = {
@@ -15,10 +16,9 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api }) => {
     const a = schema.parse(raw ?? {});
-    const groups = await api.getCategoryGroups();
-    let name: string | null = null;
-    for (const g of groups) for (const c of g.categories ?? []) if (c.id === a.category_id) name = c.name;
-    if (!name) throw new Error(`Categoría no encontrada: ${a.category_id} (usa get_categories para ver los ids)`);
+    const cat = (await getCategoryIndex(api)).get(a.category_id);
+    if (!cat) throw new Error(categoryNotFound(a.category_id));
+    const name = cat.name;
     await api.updateNote(a.category_id, a.note);
     // api.getNote devuelve {id, note} | null, no un string.
     const stored = await api.getNote(a.category_id);

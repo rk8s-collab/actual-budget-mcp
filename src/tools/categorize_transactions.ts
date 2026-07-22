@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { ID, type ToolDef } from '../core/types.js';
 
 const input = {
@@ -23,6 +24,9 @@ export const tool: ToolDef = {
       api.q('transactions').filter({ id: { $oneof: ids } }).options({ splits: 'all' }).select(['id', 'is_child', 'is_parent']),
     );
     const info = new Map((rows as any[]).map((r) => [r.id, r]));
+    // Actual no comprueba que la categoría exista: sin esto, un id inventado
+    // dejaría la transacción sin categoría y la tool informaría de éxito.
+    const cats = await getCategoryIndex(api);
     const succeeded: any[] = [];
     const failed: any[] = [];
     for (const u of a.updates) {
@@ -39,9 +43,14 @@ export const tool: ToolDef = {
         failed.push({ transaction_id: u.transaction_id, error: 'es el padre de un split; la categoría vive en las partes' });
         continue;
       }
+      const cat = cats.get(u.category_id);
+      if (!cat) {
+        failed.push({ transaction_id: u.transaction_id, error: categoryNotFound(u.category_id) });
+        continue;
+      }
       try {
         await api.updateTransaction(u.transaction_id, { category: u.category_id });
-        succeeded.push({ transaction_id: u.transaction_id, category_id: u.category_id });
+        succeeded.push({ transaction_id: u.transaction_id, category_id: u.category_id, category_name: cat.name });
       } catch (err) {
         failed.push({ transaction_id: u.transaction_id, error: (err as Error).message ?? String(err) });
       }

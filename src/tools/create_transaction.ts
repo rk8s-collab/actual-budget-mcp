@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
 import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
@@ -29,6 +30,13 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
+    // Actual acepta cualquier id de categoría: si no existe, la transacción se
+    // crea sin categoría y nadie se entera. Validamos antes de escribir.
+    const wanted = [...(a.category_id ? [a.category_id] : []), ...(a.splits?.map((s) => s.category_id) ?? [])];
+    if (wanted.length > 0) {
+      const cats = await getCategoryIndex(api);
+      for (const id of wanted) if (!cats.has(id)) throw new Error(categoryNotFound(id));
+    }
     const cents = toCents(a.amount);
     const tx: any = { date: a.date, amount: cents };
     if (a.payee_name) tx.payee_name = a.payee_name;

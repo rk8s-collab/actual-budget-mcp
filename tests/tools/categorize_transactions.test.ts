@@ -8,10 +8,18 @@ const T2 = '22222222-2222-4222-8222-222222222222';
 const T3 = '33333333-3333-4333-8333-333333333333';
 const C1 = 'cccccccc-1111-4111-8111-111111111111';
 const C2 = 'cccccccc-2222-4222-8222-222222222222';
+const C_GHOST = 'cccccccc-9999-4999-8999-999999999999';
+
+const GROUPS = [
+  { id: 'aaaaaaaa-1111-4111-8111-111111111111', name: 'Comida', is_income: false, categories: [
+    { id: C1, name: 'Alimentacion' }, { id: C2, name: 'Restaurantes' },
+  ] },
+];
 
 describe('categorize_transactions', () => {
   it('applies each update independently and reports per-item results', async () => {
     const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: async () => ({ data: [
         { id: T1, is_child: false, is_parent: false },
         { id: T2, is_child: false, is_parent: false },
@@ -33,9 +41,37 @@ describe('categorize_transactions', () => {
     expect(r.succeeded.map((s: any) => s.transaction_id)).toEqual([T1, T3]);
     expect(r.failed[0]).toMatchObject({ transaction_id: T2, error: 'boom' });
     expect(api.updateTransaction).toHaveBeenCalledWith(T1, { category: C1 });
+    // Los lotes deben ser legibles en la aprobación: nombre además del id.
+    expect(r.succeeded[0]).toMatchObject({ category_id: C1, category_name: 'Alimentacion' });
+    expect(r.succeeded[1]).toMatchObject({ category_id: C2, category_name: 'Restaurantes' });
+  });
+  it('rejects a well-formed but non-existent category id without writing', async () => {
+    const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
+      runQuery: async () => ({ data: [
+        { id: T1, is_child: false, is_parent: false },
+        { id: T2, is_child: false, is_parent: false },
+      ] }),
+    });
+    const r: any = await tool.handler(
+      { updates: [
+        { transaction_id: T1, category_id: C_GHOST },
+        { transaction_id: T2, category_id: C2 },
+      ] },
+      { api, config: testConfig },
+    );
+    expect(r).toMatchObject({ total: 2, success_count: 1, failure_count: 1 });
+    expect(r.failed[0]).toMatchObject({ transaction_id: T1 });
+    expect(r.failed[0].error).toMatch(/categoría inexistente/i);
+    expect(r.failed[0].error).toContain(C_GHOST);
+    expect(api.updateTransaction).toHaveBeenCalledTimes(1);
+    expect(api.updateTransaction).toHaveBeenCalledWith(T2, { category: C2 });
+    // El índice se lee una sola vez por lote.
+    expect(api.getCategoryGroups).toHaveBeenCalledTimes(1);
   });
   it('guards split children/parents and missing ids via a batched pre-read', async () => {
     const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: async () => ({ data: [
         { id: T1, is_child: false, is_parent: false },
         { id: T2, is_child: true, is_parent: false },

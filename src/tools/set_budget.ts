@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, moneyFields } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
 
@@ -24,13 +25,23 @@ export const tool: ToolDef = {
     const a = schema.parse(raw ?? {});
     const succeeded: any[] = [];
     const failed: any[] = [];
+    // Sin esta comprobación, un id inventado escribiría una celda huérfana.
+    const cats = await getCategoryIndex(api);
     await api.batchBudgetUpdates(async () => {
       for (const op of a.operations) {
+        const cat = cats.get(op.category_id);
+        if (!cat) {
+          failed.push({ month: op.month, category_id: op.category_id, error: categoryNotFound(op.category_id) });
+          continue;
+        }
         try {
           const cents = toCents(op.amount);
           await api.setBudgetAmount(op.month, op.category_id, cents);
           if (op.carryover !== undefined) await api.setBudgetCarryover(op.month, op.category_id, op.carryover);
-          succeeded.push({ month: op.month, category_id: op.category_id, ...moneyFields(cents, config.locale, config.currency) });
+          succeeded.push({
+            month: op.month, category_id: op.category_id, category_name: cat.name,
+            ...moneyFields(cents, config.locale, config.currency),
+          });
         } catch (err) {
           failed.push({ month: op.month, category_id: op.category_id, error: (err as Error).message ?? String(err) });
         }

@@ -6,11 +6,19 @@ import { mockApi, testConfig } from '../helpers/mock-api.js';
 const A1 = 'aaaaaaaa-1111-4111-8111-111111111111';
 const C1 = 'cccccccc-1111-4111-8111-111111111111';
 const C2 = 'cccccccc-2222-4222-8222-222222222222';
+const C_GHOST = 'cccccccc-9999-4999-8999-999999999999';
+
+const GROUPS = [
+  { id: 'aaaaaaaa-1111-4111-8111-111111111111', name: 'Comida', is_income: false, categories: [
+    { id: C1, name: 'Alimentacion' }, { id: C2, name: 'Restaurantes' },
+  ] },
+];
 
 describe('create_transaction', () => {
   it('creates with payee_name and category, converts units to cents, echoes state', async () => {
     let call = 0;
     const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: vi.fn(async () => {
         call += 1;
         if (call === 1) return { data: [{ id: 'tNew' }] };
@@ -30,6 +38,7 @@ describe('create_transaction', () => {
   it('creates already-split when splits are given and they sum to the total', async () => {
     let call = 0;
     const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: vi.fn(async () => {
         call += 1;
         if (call === 1) return { data: [{ id: 'tS' }] };
@@ -46,7 +55,7 @@ describe('create_transaction', () => {
     expect(r.transaction.splits).toHaveLength(2);
   });
   it('rejects splits that do not sum to the amount', async () => {
-    const api = mockApi();
+    const api = mockApi({ getCategoryGroups: vi.fn(async () => GROUPS) });
     await expect(tool.handler(
       { account_id: A1, date: '2026-07-22', amount: -180, splits: [
         { amount: -120, category_id: C1 }, { amount: -50, category_id: C2 },
@@ -54,5 +63,36 @@ describe('create_transaction', () => {
       { api, config: testConfig },
     )).rejects.toThrow(/difieren/i);
     expect(api.addTransactions).not.toHaveBeenCalled();
+  });
+  it('rejects a well-formed but non-existent category_id before writing', async () => {
+    const api = mockApi({ getCategoryGroups: vi.fn(async () => GROUPS) });
+    await expect(tool.handler(
+      { account_id: A1, date: '2026-07-22', amount: -23.5, category_id: C_GHOST },
+      { api, config: testConfig },
+    )).rejects.toThrow(new RegExp(`categoría inexistente.*${C_GHOST}`, 'i'));
+    expect(api.addTransactions).not.toHaveBeenCalled();
+  });
+  it('rejects a non-existent category_id inside splits before writing', async () => {
+    const api = mockApi({ getCategoryGroups: vi.fn(async () => GROUPS) });
+    await expect(tool.handler(
+      { account_id: A1, date: '2026-07-22', amount: -180, splits: [
+        { amount: -120, category_id: C1 }, { amount: -60, category_id: C_GHOST },
+      ] },
+      { api, config: testConfig },
+    )).rejects.toThrow(/categoría inexistente/i);
+    expect(api.addTransactions).not.toHaveBeenCalled();
+  });
+  it('does not read the category index when no category is given', async () => {
+    let call = 0;
+    const api = mockApi({
+      runQuery: vi.fn(async () => {
+        call += 1;
+        if (call === 1) return { data: [{ id: 'tNo' }] };
+        return { data: [{ id: 'tNo', date: '2026-07-22', account: A1, amount: -1000 }] };
+      }),
+    });
+    await tool.handler({ account_id: A1, date: '2026-07-22', amount: -10 }, { api, config: testConfig });
+    expect(api.getCategoryGroups).not.toHaveBeenCalled();
+    expect(api.addTransactions).toHaveBeenCalled();
   });
 });
