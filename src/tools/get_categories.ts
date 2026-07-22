@@ -22,7 +22,9 @@ export const tool: ToolDef = {
         if (!args.include_hidden && c.hidden) continue;
         const row: any = { id: c.id, name: c.name, hidden: !!c.hidden };
         if (args.include_notes) {
-          const note = await api.getNote(c.id);
+          // api.getNote devuelve {id, note} | null, no un string.
+          const stored = await api.getNote(c.id);
+          const note = (stored as any)?.note ?? null;
           if (note) row.note = note;
         }
         cats.push(row);

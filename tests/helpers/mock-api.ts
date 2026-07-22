@@ -23,6 +23,8 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     getCategoryGroups: vi.fn(async () => []),
     getBudgetMonth: vi.fn(async () => ({})),
     getNote: vi.fn(async () => null),
+    getPayees: vi.fn(async () => []),
+    createPayee: vi.fn(async () => 'p-new'),
     q: vi.fn((table: string) => { const b = chainableQ(); b.table = table; return b; }),
     runQuery: vi.fn(async () => ({ data: [] })),
     updateTransaction: vi.fn(async () => []),

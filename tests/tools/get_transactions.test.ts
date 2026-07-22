@@ -4,9 +4,9 @@ import { mockApi, testConfig } from '../helpers/mock-api.js';
 
 const rows = [
   { id: 't1', date: '2026-06-10', 'account.name': 'Banco', 'payee.name': 'Mercadona',
-    'category.name': 'Alimentacion', amount: -4550, notes: null, transfer_id: null, is_parent: false },
+    'category.name': 'Alimentacion', amount: -4550, notes: null, transfer_id: null, is_parent: false, is_child: false, parent_id: null },
   { id: 't2', date: '2026-06-09', 'account.name': 'Banco', 'payee.name': 'Traspaso',
-    'category.name': null, amount: -10000, notes: null, transfer_id: 'x9', is_parent: false },
+    'category.name': null, amount: -10000, notes: null, transfer_id: 'x9', is_parent: false, is_child: true, parent_id: 'tP' },
 ];
 
 describe('get_transactions', () => {
@@ -23,6 +23,9 @@ describe('get_transactions', () => {
     });
     expect(r.transactions[0].is_transfer).toBeUndefined();
     expect(r.transactions[1].is_transfer).toBe(true);
+    expect(r.transactions[0].is_child).toBeUndefined();
+    expect(r.transactions[1].is_child).toBe(true);
+    expect(r.transactions[1].parent_id).toBe('tP');
     expect(r.total_count).toBe(2);
   });
   it('filters transfers out via query by default and applies pagination filters', async () => {

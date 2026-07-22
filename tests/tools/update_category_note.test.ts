@@ -8,7 +8,7 @@ describe('update_category_note', () => {
   it('writes the note and echoes the stored value', async () => {
     const api = mockApi({
       getCategoryGroups: async () => groups,
-      getNote: async () => '#template 350',
+      getNote: async () => ({ id: 'c1', note: '#template 350' }),
     });
     const r: any = await tool.handler({ category_id: 'c1', note: '#template 350' }, { api, config: testConfig });
     expect(api.updateNote).toHaveBeenCalledWith('c1', '#template 350');

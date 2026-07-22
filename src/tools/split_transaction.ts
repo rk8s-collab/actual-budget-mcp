@@ -42,8 +42,9 @@ export const tool: ToolDef = {
     const sum = parts.reduce((s, p) => s + p.amount, 0);
     if (sum !== totalCents) {
       const diff = totalCents - sum;
+      const word = diff > 0 ? 'faltan' : 'sobran';
       throw new Error(
-        `Las partes difieren del total: suman ${formatAmount(sum, config.locale, config.currency)} y el movimiento es ${formatAmount(totalCents, config.locale, config.currency)} (faltan ${formatAmount(diff, config.locale, config.currency)}). Ajusta las partes o usa adjust_last=true`,
+        `Las partes difieren del total: suman ${formatAmount(sum, config.locale, config.currency)} y el movimiento es ${formatAmount(totalCents, config.locale, config.currency)} (${word} ${formatAmount(Math.abs(diff), config.locale, config.currency)}). Ajusta las partes o usa adjust_last=true`,
       );
     }
 

@@ -47,6 +47,15 @@ describe('split_transaction', () => {
     )).rejects.toThrow(/-10|10,00|difieren/i);
     expect(api.addTransactions).not.toHaveBeenCalled();
   });
+  it('reports "sobran" when the parts overshoot the total', async () => {
+    const positive = { ...original, amount: 18000 };
+    const api = mockApi({ runQuery: async () => ({ data: [positive] }) });
+    await expect(tool.handler(
+      { transaction_id: 't1', splits: [{ amount: 120, category_id: 'c1' }, { amount: 70, category_id: 'c2' }] },
+      { api, config: testConfig },
+    )).rejects.toThrow(/sobran/i);
+    expect(api.addTransactions).not.toHaveBeenCalled();
+  });
   it('adjust_last computes the remainder server-side', async () => {
     const api = apiForSplit();
     await tool.handler(

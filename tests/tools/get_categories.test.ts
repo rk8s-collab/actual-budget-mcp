@@ -21,7 +21,7 @@ describe('get_categories', () => {
   it('includes hidden and notes on demand', async () => {
     const api = mockApi({
       getCategoryGroups: async () => groups,
-      getNote: async (id: string) => (id === 'c1' ? '#template 350' : null),
+      getNote: async (id: string) => (id === 'c1' ? { id, note: '#template 350' } : null),
     });
     const r: any = await tool.handler({ include_hidden: true, include_notes: true }, { api, config: testConfig });
     expect(r.groups[0].categories).toHaveLength(2);

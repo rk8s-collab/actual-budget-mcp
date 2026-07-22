@@ -48,7 +48,7 @@ export const tool: ToolDef = {
         .orderBy({ date: 'desc' })
         .limit(a.limit)
         .offset(a.offset)
-        .select(['id', 'date', 'account.name', 'payee.name', 'category.name', 'amount', 'notes', 'transfer_id', 'is_parent']),
+        .select(['id', 'date', 'account.name', 'payee.name', 'category.name', 'amount', 'notes', 'transfer_id', 'is_parent', 'is_child', 'parent_id']),
     );
 
     const transactions = (data as any[]).map((t) => {
@@ -63,6 +63,7 @@ export const tool: ToolDef = {
       if (t.notes) row.notes = t.notes;
       if (t.transfer_id) row.is_transfer = true;
       if (t.is_parent) row.is_split = true;
+      if (t.is_child) { row.is_child = true; row.parent_id = t.parent_id; }
       return row;
     });
 

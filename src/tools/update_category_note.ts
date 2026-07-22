@@ -20,7 +20,8 @@ export const tool: ToolDef = {
     for (const g of groups) for (const c of g.categories ?? []) if (c.id === a.category_id) name = c.name;
     if (!name) throw new Error(`Categoría no encontrada: ${a.category_id} (usa get_categories para ver los ids)`);
     await api.updateNote(a.category_id, a.note);
+    // api.getNote devuelve {id, note} | null, no un string.
     const stored = await api.getNote(a.category_id);
-    return { updated: true, category_id: a.category_id, category_name: name, note: stored ?? null };
+    return { updated: true, category_id: a.category_id, category_name: name, note: (stored as any)?.note ?? null };
   },
 };
