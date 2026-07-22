@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
-import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
+import { candidateIds, newIdFromDiff, getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
 
 const input = {
@@ -76,17 +76,14 @@ export const tool: ToolDef = {
     if (orig.imported_payee) copy.imported_payee = orig.imported_payee;
     if (orig.schedule) copy.schedule = orig.schedule;
     if (orig.reconciled) copy.reconciled = true;
+    // Fotografiamos los candidatos ANTES de escribir: con splits agrupados la consulta
+    // puede arrastrar parents ajenos, y el orden de Actual es un detalle interno.
+    const before = new Set(await candidateIds(api, orig.account, orig.date, totalCents));
     await api.addTransactions(orig.account, [copy], { learnCategories: false, runTransfers: false });
 
-    const { data: candidates } = await api.runQuery(
-      api.q('transactions')
-        .filter({ account: orig.account })
-        .filter({ date: orig.date })
-        .filter({ amount: totalCents })
-        .options({ splits: 'grouped' })
-        .select(['id']),
-    );
-    const newId = (candidates as any[]).map((c) => c.id).find((cid) => cid !== a.transaction_id);
+    const after = (await candidateIds(api, orig.account, orig.date, totalCents))
+      .filter((cid) => cid !== a.transaction_id); // cinturón y tirantes: el original nunca es la copia
+    const { id: newId, ambiguous } = newIdFromDiff(before, after);
     if (!newId) {
       throw new Error(`Split creado pero no localizado; el original ${a.transaction_id} NO se ha borrado — revisa duplicados en Actual`);
     }
@@ -98,6 +95,13 @@ export const tool: ToolDef = {
       );
     }
     const fresh = await getTransactionById(api, newId);
-    return { split: true, original_id: a.transaction_id, transaction: mapTxEcho(fresh ?? { ...copy, id: newId, account: orig.account }, config.locale, config.currency) };
+    return {
+      split: true,
+      original_id: a.transaction_id,
+      ...(ambiguous
+        ? { note: 'Aparecieron varias filas nuevas con la misma cuenta, fecha e importe; se devuelve la primera. Revisa posibles duplicados en Actual' }
+        : {}),
+      transaction: mapTxEcho(fresh ?? { ...copy, id: newId, account: orig.account }, config.locale, config.currency),
+    };
   },
 };

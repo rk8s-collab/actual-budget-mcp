@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
-import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
+import { candidateIds, newIdFromDiff, getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
@@ -53,19 +53,17 @@ export const tool: ToolDef = {
       }
       tx.subtransactions = parts;
     }
+    // Fotografiamos los candidatos ANTES de escribir: la fila nueva se identifica por
+    // diferencia de conjuntos, no por el orden implícito que devuelva Actual.
+    const before = new Set(await candidateIds(api, a.account_id, a.date, cents));
     await api.addTransactions(a.account_id, [tx], { learnCategories: true, runTransfers: false });
-    const { data: candidates } = await api.runQuery(
-      api.q('transactions')
-        .filter({ account: a.account_id })
-        .filter({ date: a.date })
-        .filter({ amount: cents })
-        .options({ splits: 'grouped' })
-        .select(['id']),
-    );
-    const newId = (candidates as any[])[0]?.id;
+    const { id: newId, ambiguous } = newIdFromDiff(before, await candidateIds(api, a.account_id, a.date, cents));
     const fresh = newId ? await getTransactionById(api, newId) : null;
     return {
       created: true,
+      ...(ambiguous
+        ? { note: 'Aparecieron varias filas nuevas con la misma cuenta, fecha e importe; se devuelve la primera. Revisa posibles duplicados en Actual' }
+        : {}),
       transaction: mapTxEcho(fresh ?? { ...tx, id: newId ?? 'unknown', account: a.account_id }, config.locale, config.currency),
     };
   },

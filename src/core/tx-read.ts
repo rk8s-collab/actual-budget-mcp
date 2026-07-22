@@ -8,6 +8,30 @@ export async function getTransactionById(api: any, id: string): Promise<any | nu
   return (data as any[])[0] ?? null;
 }
 
+/**
+ * Ids de las filas que compiten por ser "la recién creada": mismo (cuenta, fecha, importe).
+ * Con splits agrupados la consulta puede arrastrar parents ajenos cuyo hijo coincide en
+ * importe, así que el conjunto se usa SIEMPRE por diferencia (antes vs después), nunca
+ * confiando en el orden implícito que devuelve Actual.
+ */
+export async function candidateIds(api: any, account: string, date: string, amount: number): Promise<string[]> {
+  const { data } = await api.runQuery(
+    api.q('transactions')
+      .filter({ account })
+      .filter({ date })
+      .filter({ amount })
+      .options({ splits: 'grouped' })
+      .select(['id']),
+  );
+  return (data as any[]).map((c) => c.id);
+}
+
+/** Diferencia de conjuntos: la fila nueva es la que no existía antes de escribir. */
+export function newIdFromDiff(before: Set<string>, after: string[]): { id?: string; ambiguous: boolean } {
+  const added = after.filter((id) => !before.has(id));
+  return { id: added[0], ambiguous: added.length > 1 };
+}
+
 /** Echo compacto post-escritura: ids incluidos (el LLM acaba de usarlos). */
 export function mapTxEcho(raw: any, locale: string, currency: string) {
   const echo: any = {

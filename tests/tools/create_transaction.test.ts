@@ -7,6 +7,8 @@ const A1 = 'aaaaaaaa-1111-4111-8111-111111111111';
 const C1 = 'cccccccc-1111-4111-8111-111111111111';
 const C2 = 'cccccccc-2222-4222-8222-222222222222';
 const C_GHOST = 'cccccccc-9999-4999-8999-999999999999';
+const T_PRE = 'ffffffff-1111-4111-8111-111111111111';  // fila preexistente con mismo (cuenta, fecha, importe)
+const T_NEW = 'ffffffff-2222-4222-8222-222222222222';  // la realmente creada
 
 const GROUPS = [
   { id: 'aaaaaaaa-1111-4111-8111-111111111111', name: 'Comida', is_income: false, categories: [
@@ -21,7 +23,8 @@ describe('create_transaction', () => {
       getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: vi.fn(async () => {
         call += 1;
-        if (call === 1) return { data: [{ id: 'tNew' }] };
+        if (call === 1) return { data: [] };                 // snapshot previo a escribir
+        if (call === 2) return { data: [{ id: 'tNew' }] };   // candidatos tras escribir
         return { data: [{ id: 'tNew', date: '2026-07-22', account: A1, payee_name: 'Mercadona', category: C1, amount: -2350 }] };
       }),
     });
@@ -41,7 +44,8 @@ describe('create_transaction', () => {
       getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: vi.fn(async () => {
         call += 1;
-        if (call === 1) return { data: [{ id: 'tS' }] };
+        if (call === 1) return { data: [] };                 // snapshot previo a escribir
+        if (call === 2) return { data: [{ id: 'tS' }] };     // candidatos tras escribir
         return { data: [{ id: 'tS', date: '2026-07-22', account: A1, amount: -18000,
           subtransactions: [{ amount: -12000, category: C1 }, { amount: -6000, category: C2 }] }] };
       }),
@@ -82,12 +86,29 @@ describe('create_transaction', () => {
     )).rejects.toThrow(/categoría inexistente/i);
     expect(api.addTransactions).not.toHaveBeenCalled();
   });
+  it('identifies the new row by set difference, not by ordering', async () => {
+    let call = 0;
+    const api = mockApi({
+      runQuery: vi.fn(async () => {
+        call += 1;
+        if (call === 1) return { data: [{ id: T_PRE }] };                     // antes de crear
+        if (call === 2) return { data: [{ id: T_PRE }, { id: T_NEW }] };      // después
+        return { data: [{ id: T_NEW, date: '2026-07-22', account: A1, amount: -2350 }] };
+      }),
+    });
+    const r: any = await tool.handler(
+      { account_id: A1, date: '2026-07-22', amount: -23.5, payee_name: 'X' },
+      { api, config: testConfig },
+    );
+    expect(r.transaction.id).toBe(T_NEW);
+  });
   it('does not read the category index when no category is given', async () => {
     let call = 0;
     const api = mockApi({
       runQuery: vi.fn(async () => {
         call += 1;
-        if (call === 1) return { data: [{ id: 'tNo' }] };
+        if (call === 1) return { data: [] };                 // snapshot previo a escribir
+        if (call === 2) return { data: [{ id: 'tNo' }] };    // candidatos tras escribir
         return { data: [{ id: 'tNo', date: '2026-07-22', account: A1, amount: -1000 }] };
       }),
     });

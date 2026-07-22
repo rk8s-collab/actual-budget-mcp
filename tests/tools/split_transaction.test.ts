@@ -9,6 +9,8 @@ const C2 = 'cccccccc-2222-4222-8222-222222222222';
 
 const C_GHOST = 'cccccccc-0000-4000-8000-000000000000';
 const SCH1 = 'dddddddd-1111-4111-8111-111111111111';
+// Parent ajeno que la consulta agrupada arrastra porque una de sus partes coincide en importe.
+const T_OTHER = 'eeeeeeee-1111-4111-8111-111111111111';
 // Grupos de categorías del presupuesto: sólo C1 y C2 existen.
 const GROUPS = [{ id: 'g1', name: 'Gastos', is_income: false, categories: [
   { id: C1, name: 'Alimentacion' }, { id: C2, name: 'Ocio' },
@@ -25,7 +27,8 @@ function apiForSplit(orig: Record<string, unknown> = original) {
     runQuery: vi.fn(async () => {
       call += 1;
       if (call === 1) return { data: [orig] };                         // pre-read
-      if (call === 2) return { data: [{ id: T1 }, { id: 't9' }] };    // locate candidates
+      if (call === 2) return { data: [{ id: T1 }] };                   // snapshot previo a escribir
+      if (call === 3) return { data: [{ id: T1 }, { id: 't9' }] };     // candidatos tras escribir
       return { data: [newParent] };                                     // echo grouped
     }),
   });
@@ -102,6 +105,28 @@ describe('split_transaction', () => {
     )).rejects.toThrow(C_GHOST);
     expect(api.addTransactions).not.toHaveBeenCalled();
     expect(api.deleteTransaction).not.toHaveBeenCalled();
+  });
+  it('identifies the replacement by set difference, ignoring unrelated parents already present', async () => {
+    let call = 0;
+    const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
+      runQuery: vi.fn(async () => {
+        call += 1;
+        if (call === 1) return { data: [original] };                                // pre-read
+        if (call === 2) return { data: [{ id: T1 }, { id: T_OTHER }] };             // snapshot previo
+        if (call === 3) return { data: [{ id: T1 }, { id: T_OTHER }, { id: 't9' }] }; // tras crear
+        return { data: [newParent] };                                                // echo grouped
+      }),
+    });
+    const r: any = await tool.handler(
+      { transaction_id: T1, splits: [
+        { amount: -120, category_id: C1 },
+        { amount: -60, category_id: C2 },
+      ] },
+      { api, config: testConfig },
+    );
+    expect(r.transaction.id).toBe('t9');
+    expect(api.deleteTransaction).toHaveBeenCalledWith(T1);
   });
   it('carries imported_id, imported_payee, reconciled and schedule to the replacement', async () => {
     const api = apiForSplit({ ...original, imported_id: 'imp-1', imported_payee: 'MERCADONA S.A.', schedule: SCH1, reconciled: true });
