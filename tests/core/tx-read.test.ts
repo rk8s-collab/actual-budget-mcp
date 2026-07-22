@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getTransactionById, mapTxEcho } from '../../src/core/tx-read.js';
+import { getTransactionById, mapTxEcho, newIdFromDiff } from '../../src/core/tx-read.js';
 import { mockApi } from '../helpers/mock-api.js';
 
 describe('getTransactionById', () => {
@@ -14,6 +14,20 @@ describe('getTransactionById', () => {
   it('returns null when not found', async () => {
     const api = mockApi({ runQuery: async () => ({ data: [] }) });
     expect(await getTransactionById(api, 'nope')).toBeNull();
+  });
+});
+
+describe('newIdFromDiff', () => {
+  it('returns the only id when nothing existed before', () => {
+    expect(newIdFromDiff(new Set(), ['t9'])).toEqual({ id: 't9', ambiguous: false });
+  });
+  it('returns id undefined (not found) when after adds nothing to before', () => {
+    // Rama de degradación: sin fila nueva no hay nada que devolver. Las tools que la
+    // consumen dependen de este `id: undefined` para no borrar el original.
+    expect(newIdFromDiff(new Set(['t1', 't2']), ['t1', 't2'])).toEqual({ id: undefined, ambiguous: false });
+  });
+  it('returns the first new id and signals ambiguity when two rows appear', () => {
+    expect(newIdFromDiff(new Set(['t1']), ['t1', 't8', 't9'])).toEqual({ id: 't8', ambiguous: true });
   });
 });
 

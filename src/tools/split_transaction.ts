@@ -75,7 +75,12 @@ export const tool: ToolDef = {
     if (orig.imported_id) copy.imported_id = orig.imported_id;
     if (orig.imported_payee) copy.imported_payee = orig.imported_payee;
     if (orig.schedule) copy.schedule = orig.schedule;
-    if (orig.reconciled) copy.reconciled = true;
+    // En el modelo de Actual conciliado implica compensado: copiarlos como campos
+    // independientes podría producir una fila incoherente (reconciled sin cleared).
+    if (orig.reconciled) {
+      copy.reconciled = true;
+      copy.cleared = true;
+    }
     // Fotografiamos los candidatos ANTES de escribir: con splits agrupados la consulta
     // puede arrastrar parents ajenos, y el orden de Actual es un detalle interno.
     const before = new Set(await candidateIds(api, orig.account, orig.date, totalCents));
@@ -91,7 +96,7 @@ export const tool: ToolDef = {
       await api.deleteTransaction(a.transaction_id);
     } catch (err) {
       throw new Error(
-        `Split creado como ${newId} pero no se pudo borrar el original ${a.transaction_id} (${(err as Error).message}); hay un duplicado visible en Actual — borra el original a mano`,
+        `Split creado como ${newId} pero no se pudo borrar el original ${a.transaction_id} (${(err as Error).message}); hay un duplicado visible en Actual — borra el original a mano. Ojo: la copia hereda el mismo id de importación (imported_id) que el original, así que mientras convivan las dos filas comparten la clave de deduplicación del banco y la próxima sincronización bancaria puede confundirse. Si el original estaba conciliado, tendrás que desbloquear la conciliación antes de poder borrarlo`,
       );
     }
     const fresh = await getTransactionById(api, newId);

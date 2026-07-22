@@ -141,6 +141,27 @@ describe('split_transaction', () => {
       imported_id: 'imp-1', imported_payee: 'MERCADONA S.A.', schedule: SCH1, reconciled: true,
     });
   });
+  it('throws without deleting the original when no new row appears (empty difference)', async () => {
+    // Garantía crítica: si la copia no se localiza, el original SOBREVIVE.
+    let call = 0;
+    const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
+      runQuery: vi.fn(async () => {
+        call += 1;
+        if (call === 1) return { data: [original] };    // pre-read
+        if (call === 2) return { data: [{ id: T1 }] };  // snapshot previo
+        return { data: [{ id: T1 }] };                  // tras escribir: mismo conjunto
+      }),
+    });
+    await expect(tool.handler(
+      { transaction_id: T1, splits: [
+        { amount: -120, category_id: C1 },
+        { amount: -60, category_id: C2 },
+      ] },
+      { api, config: testConfig },
+    )).rejects.toThrow(/creado pero no localizado/i);
+    expect(api.deleteTransaction).not.toHaveBeenCalled();
+  });
   it('refuses to split a reconciled transaction unless forced', async () => {
     const api = apiForSplit({ ...original, reconciled: true });
     await expect(tool.handler(

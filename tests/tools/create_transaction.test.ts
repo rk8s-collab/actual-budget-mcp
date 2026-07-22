@@ -102,6 +102,23 @@ describe('create_transaction', () => {
     );
     expect(r.transaction.id).toBe(T_NEW);
   });
+  it('degrades gracefully with id "unknown" when no new row appears (empty difference)', async () => {
+    let call = 0;
+    const api = mockApi({
+      runQuery: vi.fn(async () => {
+        call += 1;
+        if (call === 1) return { data: [{ id: T_PRE }] };  // snapshot previo
+        return { data: [{ id: T_PRE }] };                  // tras escribir: mismo conjunto
+      }),
+    });
+    const r: any = await tool.handler(
+      { account_id: A1, date: '2026-07-22', amount: -23.5, payee_name: 'X' },
+      { api, config: testConfig },
+    );
+    expect(r.created).toBe(true);
+    expect(r.transaction).toMatchObject({ id: 'unknown', amount: -23.5, account_id: A1 });
+    expect(r).not.toHaveProperty('note'); // una diferencia vacía no es ambigua
+  });
   it('does not read the category index when no category is given', async () => {
     let call = 0;
     const api = mockApi({
