@@ -1,15 +1,29 @@
 {
   "name": "actual-budget-mcp",
-  "version": "1.0.0",
-  "description": "MCP server para consultar Actual Budget desde Claude",
+  "version": "2.0.0-dev",
+  "description": "MCP server for Actual Budget — read/write financial assistant for LLMs",
   "type": "module",
-  "main": "src/index.js",
+  "main": "dist/index.js",
+  "bin": {
+    "actual-budget-mcp": "dist/index.js"
+  },
   "scripts": {
-    "start": "node src/index.js"
+    "build": "tsc",
+    "dev": "tsx src/index.ts",
+    "start": "node dist/index.js",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
-    "@actual-app/api": "latest",
-    "@modelcontextprotocol/sdk": "latest",
-    "dotenv": "latest"
+    "@actual-app/api": "^26.7.0",
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "dotenv": "latest",
+    "zod": "^4.4.3"
+  },
+  "devDependencies": {
+    "@types/node": "^26.1.1",
+    "tsx": "^4.23.1",
+    "typescript": "^7.0.2",
+    "vitest": "^4.1.10"
   }
 }
