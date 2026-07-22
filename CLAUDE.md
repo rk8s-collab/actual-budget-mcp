@@ -38,8 +38,14 @@ humano y decisiones en el vault personal (`Proyectos/Actual-MCP/`).
 Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
 
 ## Estado y próximos pasos
-- Brainstorming y análisis del estado del arte cerrados (2026-07-21): decisión de evolucionar
-  este MCP en vez de adoptar uno de comunidad. Porqués en el vault:
-  `Proyectos/Actual-MCP/01-Decisiones-Arquitectura.md`.
-- Instalado en paralelo `actual-budget-test` (agigante80) en Claude Desktop para comparar.
-- Siguiente: diseño del catálogo de tools (~12-15) → SPEC → plan → implementación TDD.
+- **Plan 1 completado y mergeado a main (2026-07-22)**: core TypeScript + 8 tools de lectura,
+  45 tests, smoke validado contra el servidor real. Claude Desktop apunta ya a `dist/index.js`.
+- Aprendizajes clave del Plan 1 (no repetir): los imports estáticos ESM se izan — la redirección
+  de stdout vive en `src/core/log-redirect.ts` como PRIMER import; `balance_current` es null en
+  cuentas manuales — los saldos se calculan con AQL agrupado en `src/core/balances.ts`;
+  en agregados AQL los campos llevan `$` (`{$sum: '$amount'}`).
+- Siguiente: **Plan 2** — las 8 tools de escritura del SPEC (categorizar, split real con
+  subtransacciones, schedules, presupuesto, notas). Decisión pendiente antes de los splits:
+  redondeo half-away-from-zero en `money.ts` para medios céntimos negativos.
+- `actual-budget-test` (agigante80) sigue instalado para comparar; retirar cuando Plan 2 cubra
+  la escritura.
