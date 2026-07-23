@@ -3,6 +3,7 @@ node_modules/
 .actual/
 data/
 dist/
+build/
 *.log
 .superpowers/
 
