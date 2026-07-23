@@ -36,10 +36,16 @@ Measured on `main` at `c9eec20`:
 |---|---|---|
 | `throw new Error(...)` in tool and core code (9 files) | 26 | yes |
 | `error:` / `note:` fields in tool responses | 7 | yes |
-| Custom messages inside Zod schemas | 8 | yes |
+| Custom messages inside tool-input Zod schemas (9 sites, 3 distinct texts) | 9 | yes |
 | `errorResult` strings in `server.ts` | 2 | yes |
+| Config-validation messages in `config.ts` | 4 | **no** — see below |
 | `console.error` to stderr | 9 | no — Spanish, fixed |
-| **Total localized** | **43** | |
+| **Total localized** | **44** | |
+
+**Config validation cannot be localized.** The four messages in `config.ts` (three Zod
+messages plus the `Configuración inválida:` prefix) fire while *producing* the config, so
+no language setting exists yet to consult. They stay Spanish. This is a hard constraint of
+the design, not an omission.
 
 One parameter description is in Spanish by oversight
 (`categorize_transactions.ts`, `'Máx. 50 por llamada; …'`). It is part of the English
