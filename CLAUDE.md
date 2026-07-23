@@ -62,3 +62,11 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
   y los README llevaban la URL y el Sync ID reales, y que el historial conservaba cifras reales
   en el commit de anonimización. Historial reescrito con `git filter-repo` y verificado limpio.
   Pendiente: volver a publicar como `marcoaperez/actual-budget-mcp-es` (público, MIT).
+- **Plan 4 — distribución como MCP Bundle (.mcpb) completado (2026-07-23)**: el proyecto se
+  distribuye como bundle instalable en Claude Desktop (macOS arm64), con la vía manual
+  documentada para el resto de plataformas (Intel, Windows, Linux, otros clientes MCP).
+  `manifest.json` debe mantenerse sincronizado con la `version` de `package.json` y con el
+  catálogo real de tools; ambas cosas las hacen cumplir los tests de `tests/bundle/manifest.test.ts`.
+  Pendiente para el mantenedor: verificación manual en Claude Desktop con el servidor real
+  (instalar el `.mcpb`, comprobar 8/16 tools según `ENABLE_WRITE`, y que la entrada manual
+  `actual-budget` preexistente sigue funcionando tras desinstalar la extensión).

@@ -170,7 +170,7 @@ The full security model — trust boundary, credentials, destructive operations,
 ## Development
 
 ```bash
-npm test        # full suite with Vitest (87 tests)
+npm test        # full suite with Vitest (127 tests)
 npm run dev     # runs src/index.ts with tsx (no build)
 npm run smoke   # manual check against the real Actual server (requires .env; not part of CI)
 ```
@@ -184,6 +184,24 @@ The server talks over stdio (stdin/stdout), so running it manually shows no inte
 3. Import and register it in the `allTools` array of `src/tools/index.ts`
 
 The `handler(input, ctx)` receives an initialized `{ api, config }` context; use `moneyFields`/`toUnits` from `src/core/money.js` to always return amounts in units (never cents).
+
+### Releasing a bundle
+
+1. Bump `version` in `package.json` **and** `manifest.json` (a test enforces they match).
+2. `npm test && npm run build && npm run bundle`
+3. Verify the bundle:
+   ```bash
+   npx mcpb validate manifest.json
+   unzip -l build/actual-budget-mcp-es.mcpb | grep -E 'tests/|docs/|\.env' | grep -v 'node_modules/'  # expect no output
+   unzip -l build/actual-budget-mcp-es.mcpb | grep -c 'better_sqlite3.node'  # expect at least 1
+   ```
+   `npx mcpb info <file>` (CLI 2.1.2) only prints file name, size and signature status — it
+   does not check the manifest, so it's not a substitute for `validate`. The `node_modules/`
+   exclusion in the grep is there because vendored dependency files aren't the project's own
+   code and legitimately contain paths like `tests/` — don't remove it.
+4. Install `build/actual-budget-mcp-es.mcpb` locally and check it works.
+5. `gh release create vX.Y.Z build/actual-budget-mcp-es.mcpb`, noting in the release
+   description that the bundle targets macOS on Apple Silicon.
 
 ## License
 

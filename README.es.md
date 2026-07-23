@@ -81,7 +81,8 @@ Apunta `command` a `node` y `args` al `dist/index.js` compilado (usa una ruta ab
         "ACTUAL_SERVER_PASSWORD": "tu-password",
         "ACTUAL_SYNC_ID": "00000000-0000-0000-0000-000000000000",
         "LOCALE": "es-ES",
-        "CURRENCY": "EUR"
+        "CURRENCY": "EUR",
+        "ENABLE_WRITE": "false"
       }
     }
   }
@@ -191,7 +192,7 @@ El servidor se comunica por stdio (stdin/stdout), así que al ejecutarlo manualm
 ### Tests y smoke
 
 ```bash
-npm test        # suite completa con Vitest (87 tests)
+npm test        # suite completa con Vitest (127 tests)
 npm run smoke   # comprobación manual contra el servidor Actual real (requiere .env)
 ```
 
@@ -204,6 +205,25 @@ El smoke imprime el número de cuentas y el patrimonio neto para contrastarlos c
 3. Importa y registra la tool en el array `allTools` de `src/tools/index.ts`
 
 El `handler(input, ctx)` recibe el contexto `{ api, config }` ya inicializado; usa `moneyFields`/`toUnits` de `src/core/money.js` para devolver siempre importes en unidades (nunca céntimos).
+
+### Publicar un bundle
+
+1. Sube `version` en `package.json` **y** en `manifest.json` (un test obliga a que coincidan).
+2. `npm test && npm run build && npm run bundle`
+3. Verifica el bundle:
+   ```bash
+   npx mcpb validate manifest.json
+   unzip -l build/actual-budget-mcp-es.mcpb | grep -E 'tests/|docs/|\.env' | grep -v 'node_modules/'  # sin salida
+   unzip -l build/actual-budget-mcp-es.mcpb | grep -c 'better_sqlite3.node'  # al menos 1
+   ```
+   `npx mcpb info <archivo>` (CLI 2.1.2) solo imprime nombre, tamaño y estado de firma —
+   no valida el manifiesto, así que no sustituye a `validate`. La exclusión de
+   `node_modules/` en el grep está ahí porque los archivos de dependencias empaquetadas
+   no son código propio del proyecto y contienen legítimamente rutas como `tests/` — no la
+   quites pensando que es un error.
+4. Instala `build/actual-budget-mcp-es.mcpb` en local y comprueba que funciona.
+5. `gh release create vX.Y.Z build/actual-budget-mcp-es.mcpb`, indicando en la descripción
+   de la release que el bundle está dirigido a macOS en Apple Silicon.
 
 ## Notas técnicas
 
