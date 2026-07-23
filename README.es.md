@@ -6,36 +6,65 @@
 
 Servidor MCP (Model Context Protocol) que conecta Claude Desktop / Claude.ai con una instancia self-hosted de [Actual Budget](https://actualbudget.org/). Permite consultar cuentas, transacciones, presupuestos y más directamente desde Claude usando lenguaje natural.
 
-## Requisitos
+## Instalación en Claude Desktop (recomendado)
 
-- Node.js >= 22
-- **Actual Budget** self-hosted y accesible por red
-- **Claude Desktop** o **Claude.ai** con soporte MCP
+**Requisitos:** un Mac con Apple Silicon (M1 o posterior), Claude Desktop y un servidor de
+Actual Budget self-hosted al que puedas acceder. En Macs Intel, Windows o Linux, usa la
+[instalación manual](#instalación-manual) en su lugar.
 
-## Instalación
+1. **Descarga** la última versión de `actual-budget-mcp-es.mcpb` desde la
+   [página de Releases](https://github.com/marcoaperez/actual-budget-mcp-es/releases/latest).
+2. **Encuentra tu Sync ID** — abre Actual Budget en el navegador, ve a **Settings** →
+   **Advanced Settings** → **IDs**, y copia el **Sync ID**.
+3. **Instala** — en Claude Desktop, abre **Settings → Extensions**, arrastra el archivo
+   `.mcpb` descargado a la página, revisa lo que declara y pulsa **Install**.
+4. **Rellena el formulario** que muestra Claude Desktop:
+   - **Actual server URL** — p. ej. `https://actual.example.org/`
+   - **Server password** — la misma que usas para abrir Actual en el navegador (se guarda
+     en el almacenamiento seguro de Claude Desktop, no en un archivo de configuración)
+   - **Budget Sync ID** — el del paso 2
+   - **Locale** y **Currency** — p. ej. `es-ES` y `EUR`; los valores por defecto son `en-US` y `USD`
+   - **Enable write tools** — déjalo **desactivado** por ahora (ver más abajo)
+5. **Comprueba que funciona** — empieza una conversación nueva y pregunta *"¿qué cuentas tengo?"*.
+   Deberías obtener tu lista de cuentas con sus saldos.
 
-El proyecto está escrito en TypeScript (v2), así que hay que compilarlo antes de usarlo:
+### Activar el acceso de escritura
+
+Con la casilla desactivada tienes las 8 tools de solo lectura. Actívala (Settings →
+Extensions → esta extensión → configurar) para añadir las 8 tools de escritura: editar y
+categorizar movimientos, splits reales, repetitivos, asignación de presupuesto y notas de
+categoría. Claude Desktop sigue pidiendo tu aprobación en cada llamada, y no hay tools de
+borrado.
+
+### Actualizar
+
+Descarga el `.mcpb` más reciente y vuelve a arrastrarlo — tu configuración se conserva.
+
+## Instalación manual
+
+Para otros clientes MCP, Macs Intel, Windows y Linux. Requiere Node.js >= 22 y un servidor
+de Actual Budget self-hosted accesible por red.
+
+El proyecto está escrito en TypeScript, así que hay que compilarlo antes de usarlo:
 
 ```bash
-cd ~/GITs/Actual-MCP
+git clone https://github.com/marcoaperez/actual-budget-mcp-es.git
+cd actual-budget-mcp-es
 npm install
 cp .env.example .env
 # Editar .env con tu contraseña de Actual Budget
 npm run build          # compila TypeScript a dist/
 ```
 
-Esto genera `dist/index.js`, el punto de entrada que ejecuta Claude Desktop.
+Esto genera `dist/index.js`, el punto de entrada que ejecuta tu cliente MCP.
 
-## Cómo encontrar el Sync ID
+¿Necesitas tu Sync ID? Consulta el paso 2 de
+[Instalación en Claude Desktop](#instalación-en-claude-desktop-recomendado), más arriba.
 
-1. Abre Actual Budget en el navegador
-2. Ve a **Settings** → **Advanced Settings**
-3. Busca la sección **IDs**
-4. Copia el valor de **Sync ID**
+### Configuración del cliente
 
-## Configuración en Claude Desktop
-
-Añade esta configuración al archivo `claude_desktop_config.json`:
+Añade esta configuración al archivo `claude_desktop_config.json` (o el equivalente de tu
+cliente MCP):
 
 **macOS**: `~/Library/Application Support/Claude/claude_desktop_config.json`
 
@@ -46,7 +75,7 @@ Apunta `command` a `node` y `args` al `dist/index.js` compilado (usa una ruta ab
   "mcpServers": {
     "actual-budget": {
       "command": "node",
-      "args": ["/Users/TU_USUARIO/GITs/Actual-MCP/dist/index.js"],
+      "args": ["/ruta/absoluta/actual-budget-mcp-es/dist/index.js"],
       "env": {
         "ACTUAL_SERVER_URL": "https://actual.example.org/",
         "ACTUAL_SERVER_PASSWORD": "tu-password",
@@ -59,15 +88,15 @@ Apunta `command` a `node` y `args` al `dist/index.js` compilado (usa una ruta ab
 }
 ```
 
-> Sustituye `TU_USUARIO` por tu nombre de usuario de macOS y `tu-password` por la contraseña real.
+> Sustituye la ruta por la ruta absoluta real en tu equipo, y `tu-password` por la contraseña real.
 > Recuerda ejecutar `npm run build` antes (y tras cada cambio) para regenerar `dist/`.
 
 Durante el desarrollo puedes evitar la compilación usando `tsx` directamente:
-`"command": "npx"`, `"args": ["tsx", "/ruta/absoluta/Actual-MCP/src/index.ts"]`.
+`"command": "npx"`, `"args": ["tsx", "/ruta/absoluta/actual-budget-mcp-es/src/index.ts"]`.
 
-Tras guardar, reinicia Claude Desktop para que detecte el nuevo servidor MCP.
+Tras guardar, reinicia Claude Desktop (o tu cliente) para que detecte el nuevo servidor MCP.
 
-## Variables de entorno
+### Variables de entorno
 
 Las tres primeras son obligatorias; el resto tienen valores por defecto.
 
@@ -129,6 +158,25 @@ Una vez configurado, puedes preguntar cosas como:
 
 Claude usará automáticamente las herramientas MCP para consultar tus datos reales de Actual Budget.
 
+## Seguridad
+
+- **NUNCA** commitear el archivo `.env` al repositorio
+- La contraseña de Actual Budget va solo en `.env` local o en la config de Claude Desktop
+- El `.gitignore` ya excluye `.env`, `node_modules/` y datos locales
+- No hay tools de borrado; las tools de escritura no se registran sin `ENABLE_WRITE`; hay guardas contra editar partes/padres de un split
+
+Tres cosas que conviene saber antes de activar la escritura:
+
+- `data/` guarda una **copia sin cifrar** de todo tu presupuesto (se crea con permisos `0700`, solo para ti).
+- Los nombres de pagador y las notas vienen del banco o de importaciones CSV: son **texto no confiable**, no instrucciones. Mantén la aprobación por llamada activada en tu cliente MCP.
+- `split_transaction` **reemplaza** la transacción, así que obtiene un id nuevo.
+- Cada cliente MCP que conectes arranca su propio proceso del servidor. Actual solo permite
+  que un proceso abra el presupuesto a la vez, así que las instancias extra usan
+  automáticamente su propia copia local (`<data dir>-instance-<pid>`). Si prefieres
+  controlarlo, da a cada cliente su propio `ACTUAL_DATA_DIR`.
+
+El modelo de seguridad completo — frontera de confianza, credenciales, operaciones destructivas, validación de entrada y cómo reportar una vulnerabilidad — está en [SECURITY.md](SECURITY.md) (en inglés).
+
 ## Desarrollo
 
 ### Ejecutar manualmente
@@ -156,25 +204,6 @@ El smoke imprime el número de cuentas y el patrimonio neto para contrastarlos c
 3. Importa y registra la tool en el array `allTools` de `src/tools/index.ts`
 
 El `handler(input, ctx)` recibe el contexto `{ api, config }` ya inicializado; usa `moneyFields`/`toUnits` de `src/core/money.js` para devolver siempre importes en unidades (nunca céntimos).
-
-## Seguridad
-
-- **NUNCA** commitear el archivo `.env` al repositorio
-- La contraseña de Actual Budget va solo en `.env` local o en la config de Claude Desktop
-- El `.gitignore` ya excluye `.env`, `node_modules/` y datos locales
-- No hay tools de borrado; las tools de escritura no se registran sin `ENABLE_WRITE`; hay guardas contra editar partes/padres de un split
-
-Tres cosas que conviene saber antes de activar la escritura:
-
-- `data/` guarda una **copia sin cifrar** de todo tu presupuesto (se crea con permisos `0700`, solo para ti).
-- Los nombres de pagador y las notas vienen del banco o de importaciones CSV: son **texto no confiable**, no instrucciones. Mantén la aprobación por llamada activada en tu cliente MCP.
-- `split_transaction` **reemplaza** la transacción, así que obtiene un id nuevo.
-- Cada cliente MCP que conectes arranca su propio proceso del servidor. Actual solo permite
-  que un proceso abra el presupuesto a la vez, así que las instancias extra usan
-  automáticamente su propia copia local (`<data dir>-instance-<pid>`). Si prefieres
-  controlarlo, da a cada cliente su propio `ACTUAL_DATA_DIR`.
-
-El modelo de seguridad completo — frontera de confianza, credenciales, operaciones destructivas, validación de entrada y cómo reportar una vulnerabilidad — está en [SECURITY.md](SECURITY.md) (en inglés).
 
 ## Notas técnicas
 

@@ -14,13 +14,44 @@ The design rests on five pillars:
 - **Fresh data with sync-with-TTL** — the server syncs with Actual before serving, caching the sync for a short TTL to stay fast without going stale.
 - **Real split transactions** — `split_transaction` creates genuine subtransactions in Actual, not fake notes or workarounds.
 
-## Requirements
+## Install in Claude Desktop (recommended)
 
-- Node.js >= 22
-- A self-hosted **Actual Budget** server (>= 25.x; built against API 26.7), reachable over the network
-- **Claude Desktop** or any MCP-capable client
+**Requirements:** a Mac with Apple Silicon (M1 or later), Claude Desktop, and a self-hosted
+Actual Budget server you can reach. On Intel Macs, Windows or Linux, use
+[Manual installation](#manual-installation) instead.
 
-## Installation
+1. **Download** the latest `actual-budget-mcp-es.mcpb` from the
+   [Releases page](https://github.com/marcoaperez/actual-budget-mcp-es/releases/latest).
+2. **Find your Sync ID** — open Actual Budget in the browser, go to **Settings** →
+   **Advanced Settings** → **IDs**, and copy the **Sync ID**.
+3. **Install** — in Claude Desktop, open **Settings → Extensions**, drag the downloaded
+   `.mcpb` file onto the page, review what it declares, and select **Install**.
+4. **Fill the form** Claude Desktop shows:
+   - **Actual server URL** — e.g. `https://actual.example.org/`
+   - **Server password** — the one you use to open Actual in the browser (stored by Claude
+     Desktop's secure storage, not in a config file)
+   - **Budget Sync ID** — from step 2
+   - **Locale** and **Currency** — e.g. `es-ES` and `EUR`; defaults are `en-US` and `USD`
+   - **Enable write tools** — leave this **off** for now (see below)
+5. **Check it works** — start a new conversation and ask *"what accounts do I have?"*.
+   You should get your account list with balances.
+
+### Turning on write access
+
+With the checkbox off you get the 8 read-only tools. Turn it on (Settings → Extensions →
+this extension → configure) to add the 8 write tools: editing and categorizing transactions,
+real splits, scheduled transactions, budget assignment and category notes. Claude Desktop
+still asks for your approval on every single call, and there are no delete tools.
+
+### Updating
+
+Download the newer `.mcpb` and drag it in again — your configuration is kept.
+
+## Manual installation
+
+For other MCP clients, Intel Macs, Windows and Linux. Requires Node.js >= 22 and a
+self-hosted Actual Budget server (>= 25.x; built against API 26.7) reachable over the
+network.
 
 The project is written in TypeScript, so build it before use:
 
@@ -33,17 +64,13 @@ npm run build          # compiles TypeScript to dist/
 
 This produces `dist/index.js`, the entry point your MCP client runs.
 
-### Finding your Sync ID
+Need your Sync ID? See step 2 of [Install in Claude Desktop](#install-in-claude-desktop-recommended) above.
 
-1. Open Actual Budget in the browser
-2. Go to **Settings** → **Advanced Settings**
-3. Find the **IDs** section
-4. Copy the **Sync ID** value
-
-### Claude Desktop configuration
+### Client configuration
 
 Add this to your `claude_desktop_config.json`
-(macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`).
+(macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`), or the
+equivalent configuration file for your MCP client.
 Point `command` at `node` and `args` at the compiled `dist/index.js` using an absolute path:
 
 ```json
@@ -70,7 +97,7 @@ Use `"LOCALE": "en-US"` and `"CURRENCY": "USD"` for US formatting, or `"es-ES"` 
 During development you can skip the build and run TypeScript directly with `tsx`:
 `"command": "npx"`, `"args": ["tsx", "/absolute/path/to/actual-budget-mcp-es/src/index.ts"]`.
 
-## Configuration
+### Environment variables
 
 The first three variables are required; the rest have defaults.
 

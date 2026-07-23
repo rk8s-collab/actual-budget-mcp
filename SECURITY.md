@@ -42,6 +42,11 @@ in Actual itself; this server just reads whatever the environment gives it.
 
 All diagnostic output goes to **stderr**, because stdout is the MCP channel.
 
+When installed as an MCP Bundle (`.mcpb`), the Actual password is a **sensitive** config
+field: the MCP client stores it in its own secure storage instead of a plaintext config
+file. The bundle also ships production dependencies, including a native SQLite binary
+compiled for the platform it targets.
+
 ### Local budget copy
 
 `@actual-app/api` downloads a working copy of your budget into the `data/` directory.
