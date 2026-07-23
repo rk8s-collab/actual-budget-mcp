@@ -20,10 +20,12 @@ describe('categorize_transactions', () => {
   it('applies each update independently and reports per-item results', async () => {
     const api = mockApi({
       getCategoryGroups: vi.fn(async () => GROUPS),
+      // La misma respuesta sirve para la pre-lectura (id/is_child/is_parent) y para la
+      // re-lectura de confirmación (id/category): las categorías ya son las escritas.
       runQuery: async () => ({ data: [
-        { id: T1, is_child: false, is_parent: false },
+        { id: T1, is_child: false, is_parent: false, category: C1 },
         { id: T2, is_child: false, is_parent: false },
-        { id: T3, is_child: false, is_parent: false },
+        { id: T3, is_child: false, is_parent: false, category: C2 },
       ] }),
     });
     (api.updateTransaction as any) = vi.fn(async (id: string) => {
@@ -50,7 +52,7 @@ describe('categorize_transactions', () => {
       getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: async () => ({ data: [
         { id: T1, is_child: false, is_parent: false },
-        { id: T2, is_child: false, is_parent: false },
+        { id: T2, is_child: false, is_parent: false, category: C2 },
       ] }),
     });
     const r: any = await tool.handler(
@@ -73,7 +75,7 @@ describe('categorize_transactions', () => {
     const api = mockApi({
       getCategoryGroups: vi.fn(async () => GROUPS),
       runQuery: async () => ({ data: [
-        { id: T1, is_child: false, is_parent: false },
+        { id: T1, is_child: false, is_parent: false, category: C1 },
         { id: T2, is_child: true, is_parent: false },
         // t3 intentionally missing
       ] }),
@@ -95,6 +97,57 @@ describe('categorize_transactions', () => {
     expect(api.updateTransaction).toHaveBeenCalledTimes(1);
     expect(api.updateTransaction).toHaveBeenCalledWith(T1, { category: C1 });
   });
+  it('only counts as succeeded what it can confirm by re-reading', async () => {
+    // api.updateTransaction() resuelve antes de que la escritura aterrice, así que "no
+    // lanzó" no es prueba de nada: hay que releer. Aquí t1 tarda una vuelta en reflejarse.
+    let reads = 0;
+    const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
+      runQuery: async () => {
+        reads++;
+        if (reads === 1) return { data: [{ id: T1, is_child: false, is_parent: false }] }; // pre-lectura
+        if (reads === 2) return { data: [{ id: T1, category: 'todavia-la-vieja' }] };
+        return { data: [{ id: T1, category: C1 }] };
+      },
+    });
+    const r: any = await tool.handler(
+      { updates: [{ transaction_id: T1, category_id: C1 }] },
+      { api, config: testConfig },
+    );
+    expect(r).toMatchObject({ total: 1, success_count: 1, failure_count: 0, unconfirmed_count: 0 });
+    expect(r.succeeded[0]).toMatchObject({ transaction_id: T1, category_id: C1 });
+  });
+
+  it('separates writes it could not confirm from the ones that succeeded', async () => {
+    let reads = 0;
+    const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
+      runQuery: async () => {
+        reads++;
+        if (reads === 1) {
+          return { data: [
+            { id: T1, is_child: false, is_parent: false },
+            { id: T2, is_child: false, is_parent: false },
+          ] };
+        }
+        // t1 se refleja; t2 no llega nunca.
+        return { data: [{ id: T1, category: C1 }, { id: T2, category: 'todavia-la-vieja' }] };
+      },
+    });
+    const r: any = await tool.handler(
+      { updates: [
+        { transaction_id: T1, category_id: C1 },
+        { transaction_id: T2, category_id: C2 },
+      ] },
+      { api, config: testConfig },
+    );
+    expect(r).toMatchObject({ total: 2, success_count: 1, failure_count: 0, unconfirmed_count: 1 });
+    expect(r.succeeded.map((s: any) => s.transaction_id)).toEqual([T1]);
+    expect(r.unconfirmed[0]).toMatchObject({ transaction_id: T2, category_id: C2 });
+    // Las cuentas tienen que cuadrar siempre: nada se pierde entre buckets.
+    expect(r.success_count + r.failure_count + r.unconfirmed_count).toBe(r.total);
+  });
+
   it('rejects more than 50 updates', async () => {
     const updates = Array.from({ length: 51 }, (_, i) => ({
       transaction_id: `${String(i).padStart(8, '0')}-1111-4111-8111-111111111111`,

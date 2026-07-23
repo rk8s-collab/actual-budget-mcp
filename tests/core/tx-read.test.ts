@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getTransactionById, mapTxEcho, newIdFromDiff, reflectsFields, readBack } from '../../src/core/tx-read.js';
+import { getTransactionById, mapTxEcho, newIdFromDiff, reflectsFields, readBack, readBackCategories } from '../../src/core/tx-read.js';
 import { mockApi } from '../helpers/mock-api.js';
 
 describe('getTransactionById', () => {
@@ -80,6 +80,50 @@ describe('readBack', () => {
     const r = await readBack(api, 't1', { notes: 'nueva' }, { attempts: 3, sleep });
     expect(r.settled).toBe(false);
     expect(r.row.notes).toBe('vieja'); // se devuelve lo último leído, no una invención
+    expect(api.runQuery).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('readBackCategories', () => {
+  // Misma carrera que readBack, pero en lote: categorize_transactions escribe hasta 50
+  // transacciones, así que confirmarlas de una en una serían 50 sondeos secuenciales.
+  const T1 = 't1', T2 = 't2';
+
+  it('confirms the ids whose category already landed, without sleeping', async () => {
+    const api = mockApi({ runQuery: vi.fn(async () => ({ data: [
+      { id: T1, category: 'c1' }, { id: T2, category: 'c2' },
+    ] })) });
+    const sleep = vi.fn(async () => {});
+    const settled = await readBackCategories(api, new Map([[T1, 'c1'], [T2, 'c2']]), { sleep });
+    expect([...settled].sort()).toEqual([T1, T2]);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(api.runQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('re-queries only the ones still pending', async () => {
+    let reads = 0;
+    const api = mockApi({ runQuery: async () => {
+      reads++;
+      // t1 aterriza a la primera; t2 tarda.
+      if (reads === 1) return { data: [{ id: T1, category: 'c1' }, { id: T2, category: 'vieja' }] };
+      return { data: [{ id: T2, category: 'c2' }] };
+    } });
+    const settled = await readBackCategories(api, new Map([[T1, 'c1'], [T2, 'c2']]), { sleep: async () => {} });
+    expect([...settled].sort()).toEqual([T1, T2]);
+    // La segunda consulta debe pedir solo t2: releer las 50 cada vuelta no escala.
+    const secondQuery: any = (api.q as any).mock.results[1].value;
+    expect(Object.assign({}, ...secondQuery.calls.filter.flat())).toEqual({ id: { $oneof: [T2] } });
+  });
+
+  it('leaves out what never shows up, after the configured attempts', async () => {
+    const api = mockApi({ runQuery: vi.fn(async () => ({ data: [
+      { id: T1, category: 'c1' }, { id: T2, category: 'vieja' },
+    ] })) });
+    const settled = await readBackCategories(api, new Map([[T1, 'c1'], [T2, 'c2']]), {
+      attempts: 3, sleep: async () => {},
+    });
+    expect([...settled]).toEqual([T1]);
+    expect(settled.has(T2)).toBe(false);
     expect(api.runQuery).toHaveBeenCalledTimes(3);
   });
 });

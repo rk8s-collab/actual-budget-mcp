@@ -1,5 +1,6 @@
 import { z } from 'zod';
 import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
+import { readBackCategories } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
 
 const input = {
@@ -12,7 +13,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'categorize_transactions',
-  description: 'Bulk-categorize transactions: [{transaction_id, category_id}] (max 50). Each update applies independently; the result names exactly which succeeded and which failed.',
+  description: 'Bulk-categorize transactions: [{transaction_id, category_id}] (max 50). Each update applies independently. The result names exactly which succeeded (verified by re-reading), which failed, and which were sent but could not be confirmed.',
   readOnly: false,
   annotations: { destructiveHint: true, idempotentHint: true },
   inputSchema: input,
@@ -27,7 +28,9 @@ export const tool: ToolDef = {
     // Actual no comprueba que la categoría exista: sin esto, un id inventado
     // dejaría la transacción sin categoría y la tool informaría de éxito.
     const cats = await getCategoryIndex(api);
+    const written: any[] = [];
     const succeeded: any[] = [];
+    const unconfirmed: any[] = [];
     const failed: any[] = [];
     for (const u of a.updates) {
       const meta = info.get(u.transaction_id);
@@ -50,11 +53,30 @@ export const tool: ToolDef = {
       }
       try {
         await api.updateTransaction(u.transaction_id, { category: u.category_id });
-        succeeded.push({ transaction_id: u.transaction_id, category_id: u.category_id, category_name: cat.name });
+        written.push({ transaction_id: u.transaction_id, category_id: u.category_id, category_name: cat.name });
       } catch (err) {
         failed.push({ transaction_id: u.transaction_id, error: (err as Error).message ?? String(err) });
       }
     }
-    return { total: a.updates.length, success_count: succeeded.length, failure_count: failed.length, succeeded, failed };
+
+    // api.updateTransaction() resuelve ANTES de que la escritura aterrice (ver readBack),
+    // así que "no lanzó" no prueba que la categoría se haya aplicado. Se confirma releyendo
+    // el lote; lo que no se pueda confirmar no se cuenta como éxito.
+    const settled = written.length > 0
+      ? await readBackCategories(api, new Map(written.map((w) => [w.transaction_id, w.category_id])))
+      : new Set<string>();
+    for (const w of written) (settled.has(w.transaction_id) ? succeeded : unconfirmed).push(w);
+
+    return {
+      total: a.updates.length,
+      success_count: succeeded.length,
+      failure_count: failed.length,
+      unconfirmed_count: unconfirmed.length,
+      succeeded,
+      failed,
+      ...(unconfirmed.length > 0
+        ? { unconfirmed, note: 'Se enviaron pero no se pudieron confirmar releyendo; vuelve a consultar esas transacciones antes de darlas por categorizadas' }
+        : {}),
+    };
   },
 };

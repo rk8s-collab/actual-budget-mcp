@@ -66,6 +66,34 @@ export async function readBack(
   return { row, settled: reflectsFields(row, fields) };
 }
 
+/**
+ * Variante por lote de readBack para categorías. Devuelve los ids cuya categoría ya está
+ * aplicada. Cada vuelta consulta SOLO los que siguen pendientes: confirmar de uno en uno
+ * un lote de 50 serían 50 sondeos secuenciales.
+ */
+export async function readBackCategories(
+  api: any,
+  wanted: Map<string, string>,
+  opts: { attempts?: number; delayMs?: number; sleep?: (ms: number) => Promise<void> } = {},
+): Promise<Set<string>> {
+  const attempts = opts.attempts ?? 5;
+  const delayMs = opts.delayMs ?? 20;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const settled = new Set<string>();
+  let pending = [...wanted.keys()];
+  for (let i = 0; i < attempts && pending.length > 0; i++) {
+    if (i > 0) await sleep(delayMs);
+    const { data } = await api.runQuery(
+      api.q('transactions').filter({ id: { $oneof: pending } }).options({ splits: 'all' }).select(['id', 'category']),
+    );
+    for (const row of data as any[]) {
+      if (row.category === wanted.get(row.id)) settled.add(row.id);
+    }
+    pending = pending.filter((id) => !settled.has(id));
+  }
+  return settled;
+}
+
 /** Echo compacto post-escritura: ids incluidos (el LLM acaba de usarlos). */
 export function mapTxEcho(raw: any, locale: string, currency: string) {
   const echo: any = {
