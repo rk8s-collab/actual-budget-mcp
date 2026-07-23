@@ -74,5 +74,22 @@
     "platforms": ["darwin"],
     "runtimes": { "node": ">=22" }
   },
-  "tools": []
+  "tools": [
+    { "name": "get_accounts", "description": "List accounts with current balances" },
+    { "name": "get_net_worth", "description": "Net worth with on/off-budget breakdown" },
+    { "name": "get_categories", "description": "Category groups and categories with their ids" },
+    { "name": "get_transactions", "description": "Search transactions by date, account, category, text or amount" },
+    { "name": "get_spending_summary", "description": "Aggregated spending by category, payee or month" },
+    { "name": "get_budget_month", "description": "Budget status for a month, per category" },
+    { "name": "get_budget_averages", "description": "Average, median and max spending per category over N months" },
+    { "name": "get_schedules", "description": "Recurring scheduled transactions" },
+    { "name": "update_transaction", "description": "Edit a transaction's category, payee, notes, date or amount" },
+    { "name": "categorize_transactions", "description": "Categorize up to 50 transactions in one call" },
+    { "name": "split_transaction", "description": "Split a transaction into real subtransactions" },
+    { "name": "create_transaction", "description": "Record a new expense or income, optionally already split" },
+    { "name": "create_schedule", "description": "Create a recurring or one-off scheduled transaction" },
+    { "name": "set_budget", "description": "Assign budget amounts to categories, single or bulk" },
+    { "name": "transfer_budget", "description": "Move budgeted money between categories" },
+    { "name": "update_category_note", "description": "Write a category note (goal templates)" }
+  ]
 }

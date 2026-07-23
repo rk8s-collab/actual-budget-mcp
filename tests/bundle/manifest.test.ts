@@ -31,3 +31,50 @@ describe('manifest.json', () => {
     expect(manifest.compatibility.runtimes.node).toBe('>=22');
   });
 });
+
+import { allTools } from '../../src/tools/index.js';
+import { loadConfig } from '../../src/core/config.js';
+
+describe('manifest ↔ code consistency', () => {
+  it('advertises exactly the registered tools', () => {
+    const declared = (manifest.tools as Array<{ name: string }>).map((t) => t.name).sort();
+    const registered = allTools.map((t) => t.name).sort();
+    expect(declared).toEqual(registered);
+  });
+
+  it('gives every declared tool a description', () => {
+    for (const tool of manifest.tools as Array<{ name: string; description?: string }>) {
+      expect(tool.description, `${tool.name} sin description`).toBeTruthy();
+    }
+  });
+
+  it('maps every user_config key to an env var the server actually reads', () => {
+    const env = manifest.server.mcp_config.env as Record<string, string>;
+    // Cada clave del formulario se referencia exactamente una vez en env
+    for (const key of Object.keys(manifest.user_config)) {
+      const refs = Object.values(env).filter((v) => v === '${user_config.' + key + '}');
+      expect(refs, `user_config.${key} no está cableada en mcp_config.env`).toHaveLength(1);
+    }
+    // Y cada variable de entorno del manifiesto la entiende loadConfig
+    const cfg = loadConfig({
+      ACTUAL_SERVER_URL: 'https://actual.example.org/',
+      ACTUAL_SERVER_PASSWORD: 'x',
+      ACTUAL_SYNC_ID: '00000000-0000-0000-0000-000000000000',
+      LOCALE: 'es-ES',
+      CURRENCY: 'EUR',
+      ENABLE_WRITE: 'true',
+    });
+    expect(cfg.locale).toBe('es-ES');
+    expect(cfg.currency).toBe('EUR');
+    expect(cfg.enableWrite).toBe(true);
+  });
+
+  it('does not expose ACTUAL_DATA_DIR in the form', () => {
+    expect(Object.keys(manifest.user_config)).not.toContain('data_dir');
+    expect(JSON.stringify(manifest.server.mcp_config.env)).not.toContain('ACTUAL_DATA_DIR');
+  });
+
+  it('defaults the write toggle to off', () => {
+    expect(manifest.user_config.enable_write.default).toBe(false);
+  });
+});
