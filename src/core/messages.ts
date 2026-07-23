@@ -68,9 +68,9 @@ const en: Messages = {
   budgetClosed: (cause: string, dataDir: string) =>
     'The Actual budget is closed and could not be reopened ' +
     `(original cause: ${cause}). Restart the MCP server; if it persists, ` +
-    `check the startup log and that ${dataDir} is readable.`,
+    `check the startup log and that ${dataDir} is accessible.`,
   budgetOpenFailed: (primaryDir: string, primaryErr: string, fallbackDir: string, fallbackErr: string) =>
-    `Could not open the budget either at ${primaryDir} (${primaryErr}) or at the own copy ` +
+    `Could not open the budget either at ${primaryDir} (${primaryErr}) or in its own copy at ` +
     `${fallbackDir} (${fallbackErr}). If you have several MCP clients connected at the same time, ` +
     'close the ones you are not using or give each its own ACTUAL_DATA_DIR.',
   invalidToolName: (name: string) => `Invalid tool name: ${name}`,
@@ -79,7 +79,7 @@ const en: Messages = {
   alreadySplit: 'The transaction is already split; edit its parts in Actual or undo the split first',
   reconciledNeedsForce: 'The transaction is reconciled; splitting it would break the reconciliation. Try again with force: true if you are sure',
   partsDoNotSum: (sum: string, total: string, missing: boolean, diff: string) =>
-    `The parts differ from the total: they sum ${sum} and the transaction is ${total} (${missing ? 'missing' : 'extra'} ${diff}). Adjust the parts or use adjust_last=true`,
+    `The parts differ from the total: they add up to ${sum} and the transaction is ${total} (${missing ? 'missing' : 'extra'} ${diff}). Adjust the parts or use adjust_last=true`,
   splitCreatedNotFound: (id: string) => `Split created but not located; the original ${id} was NOT deleted — check for duplicates in Actual`,
   splitCreatedNotDeleted: (newId: string, id: string, cause: string) =>
     `Split created as ${newId} but the original ${id} could not be deleted (${cause}); there is a visible duplicate in Actual — delete the original by hand. Note: the copy inherits the same import id (imported_id) as the original, so while both rows coexist they share the bank's deduplication key and the next bank sync may get confused. If the original was reconciled, you will need to unlock the reconciliation before you can delete it`,
@@ -101,7 +101,7 @@ const en: Messages = {
   txIsSplitParent: 'it is the parent of a split; the category lives in the parts',
   unconfirmedWrites: 'They were sent but could not be confirmed by re-reading; query those transactions again before considering them categorized',
   createSplitsMismatch: (sum: string, total: string) =>
-    `The parts differ from the total: they sum ${sum} and the amount is ${total}`,
+    `The parts differ from the total: they add up to ${sum} and the amount is ${total}`,
   emptyNoteRequiresClear: (name: string) =>
     `An empty note erases the existing note of "${name}". Pass clear: true to confirm.`,
   payeeNotFound: (name: string, options: string[]) =>

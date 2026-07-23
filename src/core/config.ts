@@ -19,7 +19,14 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v.toLowerCase() === 'true'),
-  MESSAGES_LANG: z.enum(['es', 'en'], { message: "MESSAGES_LANG debe ser 'es' o 'en'" }).default('es'),
+  // z.enum().default() solo actúa si la clave está AUSENTE, no si llega vacía ('');
+  // el preprocess convierte la cadena vacía en undefined ANTES de que el enum la vea,
+  // para que sea el .default('es') interno (no uno externo al preprocess) el que
+  // aplique (mismo problema que describe el test de manifest.json para locale/currency).
+  MESSAGES_LANG: z.preprocess(
+    (v) => (v === '' ? undefined : v),
+    z.enum(['es', 'en'], { message: "MESSAGES_LANG debe ser 'es' o 'en'" }).default('es'),
+  ),
 });
 
 export interface Config {

@@ -2,10 +2,12 @@
 import 'dotenv/config';
 import * as api from '@actual-app/api';
 import { loadConfig } from '../src/core/config.js';
+import { setMessageLanguage } from '../src/core/messages.js';
 import { ActualClient } from '../src/core/actual-client.js';
 import { allTools } from '../src/tools/index.js';
 
 const config = loadConfig();
+setMessageLanguage(config.messagesLang);
 const client = new ActualClient(api, config);
 await client.ensureReady();
 const ctx = { api, config };

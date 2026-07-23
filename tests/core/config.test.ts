@@ -50,4 +50,12 @@ describe('loadConfig', () => {
   it('rejects an unsupported language naming the accepted ones', () => {
     expect(() => loadConfig({ ...base, MESSAGES_LANG: 'fr' })).toThrow(/es.*en|en.*es/);
   });
+  it('treats an empty MESSAGES_LANG as absent and falls back to Spanish', () => {
+    // Un campo no requerido que llega como '' (formulario del bundle sin tocar)
+    // no debe reventar el arranque: .preprocess() lo trata como ausente.
+    expect(loadConfig({ ...base, MESSAGES_LANG: '' }).messagesLang).toBe('es');
+  });
+  it('still rejects an unsupported language even after the empty-string rescue', () => {
+    expect(() => loadConfig({ ...base, MESSAGES_LANG: 'fr' })).toThrow(/es.*en|en.*es/);
+  });
 });

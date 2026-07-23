@@ -23,6 +23,17 @@ describe('catálogo de mensajes', () => {
       expect(typeof en[k], `${k} cambia de tipo entre idiomas`).toBe(typeof es[k]);
     }
   });
+  it('mantiene la aridad de cada función entre idiomas', () => {
+    // typeof no basta: TypeScript acepta que una traducción declare MENOS parámetros
+    // que el original (p.ej. categoryNotFound: () => 'unknown category' compila limpio
+    // aunque pierda el id), y typeof seguiría diciendo 'function' en ambos lados.
+    const es = messagesFor('es'), en = messagesFor('en');
+    for (const k of Object.keys(es) as (keyof typeof es)[]) {
+      if (typeof es[k] === 'function') {
+        expect((en[k] as Function).length, `${k} cambia de aridad entre idiomas`).toBe((es[k] as Function).length);
+      }
+    }
+  });
 });
 
 // El idioma activo es estado de módulo: restaurarlo o se contamina el resto del fichero.

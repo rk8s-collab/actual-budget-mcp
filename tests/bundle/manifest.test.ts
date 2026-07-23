@@ -63,6 +63,7 @@ describe('manifest ↔ code consistency', () => {
     expect(env.LOCALE).toBe('${user_config.locale}');
     expect(env.CURRENCY).toBe('${user_config.currency}');
     expect(env.ENABLE_WRITE).toBe('${user_config.enable_write}');
+    expect(env.MESSAGES_LANG).toBe('${user_config.messages_lang}');
     // Y cada variable de entorno del manifiesto la entiende loadConfig
     const cfg = loadConfig({
       ACTUAL_SERVER_URL: 'https://actual.example.org/',
@@ -95,6 +96,10 @@ describe('manifest ↔ code consistency', () => {
     // .default() solo actúa si la clave está ausente, no si llega vacía.
     expect(manifest.user_config.locale.required).toBe(true);
     expect(manifest.user_config.currency.required).toBe(true);
+    // MESSAGES_LANG con z.enum(): un '' vacío no cae en .default(), así que este
+    // campo debe ser requerido y llevar 'es' como valor preseleccionado en el form.
+    expect(manifest.user_config.messages_lang.required).toBe(true);
+    expect(manifest.user_config.messages_lang.default).toBe('es');
   });
 });
 

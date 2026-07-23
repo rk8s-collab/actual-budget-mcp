@@ -694,6 +694,8 @@ git commit -m "Documentar MESSAGES_LANG y devolver al inglés la descripción qu
 
 - [ ] `MESSAGES_LANG` unset behaves exactly as before this plan (Spanish).
 - [ ] No pre-existing test file was edited, only appended to.
-- [ ] `grep -rn "@msg:" src/` shows markers only inside Zod schema definitions.
+- [ ] `npx vitest run tests/core/messages.test.ts -t "ningún .regex"` passes — the static
+      detector confirms every schema message in `src/tools` and `src/core/types.ts` (nested
+      included) is a deferred function that calls `activeMessages()`, not a fixed string.
 - [ ] `npx tsc --noEmit` clean — this is what proves the English catalogue is complete.
 - [ ] `manifest.json` version still matches `package.json` (existing test).

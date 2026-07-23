@@ -24,15 +24,15 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
-    const messages = msg(config);
+    const m = msg(config);
     const cents = toCents(a.amount);
-    const m = await api.getBudgetMonth(a.month);
+    const budgetMonth = await api.getBudgetMonth(a.month);
     const cats = new Map<string, any>();
-    for (const g of m.categoryGroups ?? []) for (const c of g.categories ?? []) cats.set(c.id, c);
+    for (const g of budgetMonth.categoryGroups ?? []) for (const c of g.categories ?? []) cats.set(c.id, c);
     const from = cats.get(a.from_category_id);
     const to = cats.get(a.to_category_id);
-    if (!from) throw new Error(messages.transferSourceMissing(a.month, a.from_category_id));
-    if (!to) throw new Error(messages.transferTargetMissing(a.month, a.to_category_id));
+    if (!from) throw new Error(m.transferSourceMissing(a.month, a.from_category_id));
+    if (!to) throw new Error(m.transferTargetMissing(a.month, a.to_category_id));
 
     const newFrom = (from.budgeted ?? 0) - cents;
     const newTo = (to.budgeted ?? 0) + cents;
@@ -52,9 +52,9 @@ export const tool: ToolDef = {
         rollbackMsg = (rollbackErr as Error).message;
       }
       if (rolledBack) {
-        throw new Error(messages.transferRolledBack((err as Error).message));
+        throw new Error(m.transferRolledBack((err as Error).message));
       }
-      throw new Error(messages.transferRollbackFailed((err as Error).message, rollbackMsg, from.name));
+      throw new Error(m.transferRollbackFailed((err as Error).message, rollbackMsg, from.name));
     }
 
     const fmt = (c: number) => moneyFields(c, config.locale, config.currency);

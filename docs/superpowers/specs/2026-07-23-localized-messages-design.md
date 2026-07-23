@@ -85,9 +85,15 @@ export type Messages = typeof es;
 const en: Messages = { /* missing key or changed signature ⇒ does not compile */ };
 ```
 
-Messages carrying data are functions, so the compiler checks not only that a translation
-exists but that it takes the same parameters. This is the mechanism that satisfies the third
-goal; everything else in this spec is plumbing around it.
+Messages carrying data are functions. The compiler rejects a missing key outright, which is
+the mechanism that satisfies the third goal; everything else in this spec is plumbing around
+it.
+
+It does **not** catch everything, and the gap is worth stating so nobody trusts it further
+than it goes: TypeScript accepts a function with *fewer* parameters than its type, so an
+English translation that silently drops the transaction id — `categoryNotFound: () => '…'`
+— compiles clean. A runtime test in `tests/core/messages.test.ts` compares `Function.length`
+between catalogues to close that hole.
 
 ### 3. Reaching the tools
 
@@ -143,10 +149,16 @@ New tests:
 
 - Key parity between catalogues at runtime, guarding against an `any` slipping past the
   compile-time check.
-- Every `@msg:` key referenced in schemas resolves in the catalogue.
+- A static detector requires that schema messages use `{ error: () => activeMessages()… }`
+  instead of a fixed string — it walks `.regex()`/`.uuid()`/`.refine()` call sites in
+  `src/tools` and `src/core/types.ts` (including nested schemas) and fails if any message
+  argument is not a deferred function that actually invokes `activeMessages()`.
 - `loadConfig` defaults to `es`, accepts `en`, and rejects anything else with a message
   naming the accepted values.
-- `server.ts` resolves `@msg:` keys in Zod issues and leaves ordinary messages untouched.
+- The same already-built schema changes language when the active language changes:
+  parsing against it before and after `setMessageLanguage(...)` yields the message from
+  each respective catalogue, proving the deferred function reads `activeMessages()` live
+  rather than capturing a snapshot at schema-construction time.
 - One tool asserted end-to-end in both languages, to prove the wiring from config to
   message actually holds.
 
