@@ -3,7 +3,7 @@ import type { Config } from '../../src/core/config.js';
 
 export const testConfig: Config = {
   serverUrl: 'https://x', password: 'p', syncId: 's', dataDir: '/tmp/x',
-  locale: 'en-US', currency: 'USD', syncTtlSeconds: 60, enableWrite: true,
+  locale: 'en-US', currency: 'USD', syncTtlSeconds: 60, enableWrite: true, messagesLang: 'es',
 };
 
 /** Chainable stand-in for api.q(): records table + calls, returned as the query object. */

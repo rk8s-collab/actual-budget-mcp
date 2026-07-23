@@ -28,7 +28,8 @@
         "ACTUAL_SYNC_ID": "${user_config.sync_id}",
         "LOCALE": "${user_config.locale}",
         "CURRENCY": "${user_config.currency}",
-        "ENABLE_WRITE": "${user_config.enable_write}"
+        "ENABLE_WRITE": "${user_config.enable_write}",
+        "MESSAGES_LANG": "${user_config.messages_lang}"
       }
     }
   },
@@ -72,6 +73,13 @@
       "description": "Off: 8 read-only tools. On: 8 more that can edit transactions, splits, budgets and notes. Your MCP client asks for approval before each call unless you grant it standing permission.",
       "required": false,
       "default": false
+    },
+    "messages_lang": {
+      "type": "string",
+      "title": "Message language",
+      "description": "Language of error messages the server returns: es or en",
+      "required": true,
+      "default": "es"
     }
   },
   "compatibility": {

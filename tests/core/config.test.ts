@@ -41,4 +41,13 @@ describe('loadConfig', () => {
   it('rejects non-numeric SYNC_TTL_SECONDS', () => {
     expect(() => loadConfig({ ...base, SYNC_TTL_SECONDS: 'soon' })).toThrowError(/SYNC_TTL_SECONDS/);
   });
+  it('defaults the message language to Spanish', () => {
+    expect(loadConfig(base).messagesLang).toBe('es');
+  });
+  it('accepts English', () => {
+    expect(loadConfig({ ...base, MESSAGES_LANG: 'en' }).messagesLang).toBe('en');
+  });
+  it('rejects an unsupported language naming the accepted ones', () => {
+    expect(() => loadConfig({ ...base, MESSAGES_LANG: 'fr' })).toThrow(/es.*en|en.*es/);
+  });
 });

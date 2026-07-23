@@ -12,7 +12,7 @@ import type { Config } from '../../src/core/config.js';
 
 const cfg: Config = {
   serverUrl: 'https://x', password: 'p', syncId: 's', dataDir: '/tmp/x',
-  locale: 'en-US', currency: 'USD', syncTtlSeconds: 60, enableWrite: false,
+  locale: 'en-US', currency: 'USD', syncTtlSeconds: 60, enableWrite: false, messagesLang: 'es',
 };
 
 function mockApi() {

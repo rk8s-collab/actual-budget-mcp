@@ -19,6 +19,7 @@ const envSchema = z.object({
     .string()
     .default('false')
     .transform((v) => v.toLowerCase() === 'true'),
+  MESSAGES_LANG: z.enum(['es', 'en'], { message: "MESSAGES_LANG debe ser 'es' o 'en'" }).default('es'),
 });
 
 export interface Config {
@@ -30,6 +31,7 @@ export interface Config {
   currency: string;
   syncTtlSeconds: number;
   enableWrite: boolean;
+  messagesLang: 'es' | 'en';
 }
 
 export function loadConfig(env: Record<string, string | undefined> = process.env): Config {
@@ -48,5 +50,6 @@ export function loadConfig(env: Record<string, string | undefined> = process.env
     currency: e.CURRENCY,
     syncTtlSeconds: e.SYNC_TTL_SECONDS,
     enableWrite: e.ENABLE_WRITE,
+    messagesLang: e.MESSAGES_LANG,
   };
 }
