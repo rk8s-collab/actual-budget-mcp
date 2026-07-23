@@ -36,4 +36,15 @@ describe('invalidInputResult', () => {
   it('marca el resultado como error', () => {
     expect((invalidInputResult(issues, messagesFor('es')) as any).isError).toBe(true);
   });
+  it('no revienta cuando el path traía elementos no-string (p.ej. symbol) y ya llega normalizado', () => {
+    // Zod 4 tipa path como PropertyKey[] (puede incluir symbols); i.path.join('.') lanza
+    // TypeError si hay un symbol en el array. El punto de llamada (catch de createServer)
+    // normaliza con i.path.map(String) antes de invocar invalidInputResult — String(symbol)
+    // sí funciona ('Symbol(campo)'), lo que revienta es el join implícito con el symbol crudo.
+    const pathConSimbolo: PropertyKey[] = [Symbol('campo'), 'anidado'];
+    const issuesConSimbolo = [{ path: pathConSimbolo.map(String), message: 'algo falló' }];
+    const r: any = invalidInputResult(issuesConSimbolo, messagesFor('es'));
+    expect(() => JSON.parse(r.content[0].text)).not.toThrow();
+    expect(JSON.parse(r.content[0].text).error.hint).toBe('Symbol(campo).anidado: algo falló');
+  });
 });

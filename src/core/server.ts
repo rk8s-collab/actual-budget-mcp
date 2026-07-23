@@ -36,7 +36,7 @@ function errorResult(code: string, message: string, hint?: string) {
 
 /** Pura y exportada para poder testearla sin montar un McpServer (como buildToolResult). */
 export function invalidInputResult(
-  issues: { path: PropertyKey[]; message: string }[],
+  issues: { path: string[]; message: string }[],
   m: Messages,
 ) {
   return errorResult(
@@ -72,7 +72,13 @@ export function createServer(deps: {
           const payload = await tool.handler(input ?? {}, ctx);
           return buildToolResult(payload, meta);
         } catch (err) {
-          if (err instanceof ZodError) return invalidInputResult(err.issues, msg(deps.config));
+          if (err instanceof ZodError) {
+            // Zod 4 tipa path como PropertyKey[] (puede incluir symbols); normalizamos aquí,
+            // en el punto de llamada, para que invalidInputResult conserve una firma estrecha
+            // y honesta (string[]). String(symbol) es seguro; lo que revienta es el join implícito.
+            const issues = err.issues.map((i) => ({ path: i.path.map(String), message: i.message }));
+            return invalidInputResult(issues, msg(deps.config));
+          }
           console.error(`[actual-mcp] Error en ${tool.name}:`, err);
           return errorResult('tool_failed', `${tool.name}: ${(err as Error).message}`);
         }
