@@ -8,3 +8,4 @@ build/
 .superpowers/
 
 data-instance-*/
+.DS_Store
