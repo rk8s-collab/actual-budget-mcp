@@ -5,3 +5,5 @@ data/
 dist/
 *.log
 .superpowers/
+
+data-instance-*/

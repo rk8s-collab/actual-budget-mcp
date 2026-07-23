@@ -90,3 +90,45 @@ describe('ActualClient.ensureReady', () => {
     expect(api.downloadBudget).toHaveBeenCalledTimes(1);
   });
 });
+
+describe('contención entre instancias', () => {
+  const busy = () => new Error('We had an unknown problem opening "My-Finances-6b776d4".');
+
+  it('cae a una copia propia cuando otro proceso tiene el presupuesto abierto', async () => {
+    const api = mockApi();
+    const mkdir = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
+    (api.downloadBudget as any).mockRejectedValueOnce(busy());
+
+    const c = new ActualClient(api, cfg, () => 0);
+    await c.ensureReady();
+
+    expect(api.init).toHaveBeenCalledTimes(2);
+    const usado = (api.init as any).mock.calls[1][0].dataDir;
+    expect(usado).not.toBe(cfg.dataDir);
+    expect(usado).toContain(String(process.pid));
+    expect(c.dataDir).toBe(usado);
+    expect(mkdir).toHaveBeenLastCalledWith(usado, { recursive: true, mode: 0o700 });
+    mkdir.mockRestore();
+  });
+
+  it('no cae a la copia propia ante errores ajenos a la contención', async () => {
+    const api = mockApi();
+    const mkdir = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
+    (api.downloadBudget as any).mockRejectedValueOnce(new Error('invalid password'));
+
+    const c = new ActualClient(api, cfg, () => 0);
+    await expect(c.ensureReady()).rejects.toThrow(/invalid password/);
+    expect(api.init).toHaveBeenCalledTimes(1);
+    mkdir.mockRestore();
+  });
+
+  it('si ambos directorios fallan, el error nombra los dos y cómo resolverlo', async () => {
+    const api = mockApi();
+    const mkdir = vi.spyOn(fs, 'mkdirSync').mockImplementation(() => undefined as any);
+    (api.downloadBudget as any).mockRejectedValue(busy());
+
+    const c = new ActualClient(api, cfg, () => 0);
+    await expect(c.ensureReady()).rejects.toThrow(/ACTUAL_DATA_DIR/);
+    mkdir.mockRestore();
+  });
+});

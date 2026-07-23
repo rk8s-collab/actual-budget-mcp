@@ -134,6 +134,9 @@ Three things worth knowing before you enable writes:
 - `data/` holds a **plain, unencrypted copy** of your whole budget (created owner-only, mode `0700`).
 - Payee names and notes come from bank sync or CSV imports: they are **untrusted text**, not instructions. Keep per-call approval on in your MCP client.
 - `split_transaction` **replaces** the transaction, so it gets a new id.
+- Every MCP client you connect starts its own server process. Only one process can open a
+  budget at a time, so extra instances automatically use their own local copy
+  (`<data dir>-instance-<pid>`). Set `ACTUAL_DATA_DIR` per client if you prefer to control it.
 
 The full security model — trust boundary, credentials, destructive operations, input validation and how to report a vulnerability — is documented in [SECURITY.md](SECURITY.md).
 

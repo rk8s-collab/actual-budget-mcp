@@ -50,6 +50,12 @@ history. The server creates the directory with mode `0700` (owner-only), but the
 itself is not encrypted at rest: protect it with your operating system's user account
 and, if you need it, full-disk encryption. Delete `data/` if you stop using the server.
 
+Each connected MCP client starts its **own** server process, and Actual only lets one
+process open a budget at a time. When the configured directory is already in use, the
+server transparently falls back to a per-instance copy (`<data dir>-instance-<pid>`,
+also `0700`) and says so on stderr — so a second client works instead of failing, at the
+cost of its own local copy of the budget.
+
 ### Writes are opt-in
 
 Write tools are **not registered at all** unless `ENABLE_WRITE=true` is set. With writes

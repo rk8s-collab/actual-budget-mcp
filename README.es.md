@@ -169,6 +169,10 @@ Tres cosas que conviene saber antes de activar la escritura:
 - `data/` guarda una **copia sin cifrar** de todo tu presupuesto (se crea con permisos `0700`, solo para ti).
 - Los nombres de pagador y las notas vienen del banco o de importaciones CSV: son **texto no confiable**, no instrucciones. Mantén la aprobación por llamada activada en tu cliente MCP.
 - `split_transaction` **reemplaza** la transacción, así que obtiene un id nuevo.
+- Cada cliente MCP que conectes arranca su propio proceso del servidor. Actual solo permite
+  que un proceso abra el presupuesto a la vez, así que las instancias extra usan
+  automáticamente su propia copia local (`<data dir>-instance-<pid>`). Si prefieres
+  controlarlo, da a cada cliente su propio `ACTUAL_DATA_DIR`.
 
 El modelo de seguridad completo — frontera de confianza, credenciales, operaciones destructivas, validación de entrada y cómo reportar una vulnerabilidad — está en [SECURITY.md](SECURITY.md) (en inglés).
 
