@@ -50,6 +50,21 @@ are no delete tools.
 
 Download the newer `.mcpb` and drag it in again — your configuration is kept.
 
+### If every tool fails after a Claude Desktop update
+
+The bundle ships a native SQLite module (`better-sqlite3`) compiled for one specific Node
+ABI. Claude Desktop does not run extensions with the system's Node: it starts them inside
+its own Electron runtime, so the module has to match *that* runtime. When a Claude Desktop
+update changes it, the module can no longer be loaded, Actual closes the budget, and every
+tool answers that the budget is closed and could not be reopened.
+
+Nothing on your side fixes this — the bundle has to be rebuilt for the new runtime. Get a
+newer release, or build one yourself with `npm run bundle` on a machine that has the updated
+Claude Desktop installed.
+
+This affects the `.mcpb` bundle only. A [manual installation](#manual-installation) runs
+under your own Node and is immune to it.
+
 ## Manual installation
 
 For other MCP clients, Intel Macs, Windows and Linux. Requires Node.js >= 22 and a
@@ -191,8 +206,20 @@ The `handler(input, ctx)` receives an initialized `{ api, config }` context; use
 
 ### Releasing a bundle
 
+> **The bundle is tied to Claude Desktop's Electron ABI.** Extensions run inside Claude
+> Desktop's own Electron, not the system's Node, so `better-sqlite3` has to be compiled for
+> that runtime. `npm run bundle` reads the Electron version out of the installed
+> `Claude.app`, reinstalls the prebuilt binary for it, and then verifies what actually ships
+> by `dlopen`-ing it with the packaging Node — which *must* fail, reporting Electron's ABI.
+> If it loads, the Node-targeted binary slipped in and packaging aborts.
+>
+> So: **package on a machine running the Claude Desktop you are targeting**, or pass
+> `ELECTRON_TARGET=x.y.z npm run bundle`. Re-release whenever Claude Desktop bumps its
+> Electron major — the previous bundle stops working for everyone on the new version.
+
 1. Bump `version` in `package.json` **and** `manifest.json` (a test enforces they match).
-2. `npm test && npm run build && npm run bundle`
+2. `npm test && npm run build && npm run bundle` — the last line reports the Electron
+   version and ABI the bundle was built for. Note it in the release description.
 3. Verify the bundle:
    ```bash
    npx mcpb validate manifest.json

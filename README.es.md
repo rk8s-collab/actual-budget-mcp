@@ -41,6 +41,22 @@ permiso permanente, y no hay tools de borrado.
 
 Descarga el `.mcpb` más reciente y vuelve a arrastrarlo — tu configuración se conserva.
 
+### Si todas las tools fallan tras actualizar Claude Desktop
+
+El bundle lleva un módulo nativo de SQLite (`better-sqlite3`) compilado para un ABI de Node
+concreto. Claude Desktop no ejecuta las extensiones con el Node del sistema: las arranca
+dentro de su propio Electron, así que el módulo tiene que corresponder a *ese* runtime.
+Cuando una actualización de Claude Desktop lo cambia, el módulo deja de cargar, Actual
+cierra el presupuesto y todas las tools responden que el presupuesto está cerrado y no se
+pudo volver a abrir.
+
+No hay nada que puedas hacer desde tu lado: hay que reempaquetar el bundle para el nuevo
+runtime. Descarga una versión más reciente, o constrúyela tú con `npm run bundle` en un
+equipo que tenga instalado el Claude Desktop actualizado.
+
+Solo afecta al bundle `.mcpb`. La [instalación manual](#instalación-manual) corre bajo tu
+propio Node y es inmune.
+
 ## Instalación manual
 
 Para otros clientes MCP, Macs Intel, Windows y Linux. Requiere Node.js >= 22 y un servidor
@@ -210,8 +226,21 @@ El `handler(input, ctx)` recibe el contexto `{ api, config }` ya inicializado; u
 
 ### Publicar un bundle
 
+> **El bundle queda atado al ABI de Electron de Claude Desktop.** Las extensiones corren
+> dentro del Electron de Claude, no bajo el Node del sistema, así que `better-sqlite3` tiene
+> que estar compilado para ese runtime. `npm run bundle` lee la versión de Electron del
+> `Claude.app` instalado, reinstala el prebuild para ella y verifica el binario que
+> realmente viaja haciéndole `dlopen` con el Node que empaqueta — que *debe* fallar
+> declarando el ABI de Electron. Si carga, es que se coló el binario de Node y el
+> empaquetado se detiene.
+>
+> Por tanto: **empaqueta en un equipo con el Claude Desktop al que apuntas**, o pasa
+> `ELECTRON_TARGET=x.y.z npm run bundle`. Vuelve a publicar cada vez que Claude Desktop
+> suba de Electron mayor — el bundle anterior deja de funcionar para todo el que actualice.
+
 1. Actualiza la `version` en `package.json` **y** en `manifest.json` (un test obliga a que coincidan).
-2. `npm test && npm run build && npm run bundle`
+2. `npm test && npm run build && npm run bundle` — la última línea indica para qué versión
+   de Electron y qué ABI se construyó. Anótalo en la descripción de la release.
 3. Verifica el bundle:
    ```bash
    npx mcpb validate manifest.json
