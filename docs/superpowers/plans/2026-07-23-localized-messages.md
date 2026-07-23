@@ -4,7 +4,7 @@
 
 **Goal:** Let the server answer in Spanish (default) or English, chosen by one environment variable, with the compiler refusing to build if a message lacks its translation.
 
-**Architecture:** A single catalogue module holds two objects, `es` and `en`. `es` is the reference type (`type Messages = typeof es`) and `en` is declared as `const en: Messages`, so a missing key or a changed parameter list is a compile error. Messages carrying data are functions. Tool handlers get the catalogue through `msg(config)`; Zod schemas, which are built before any config exists, carry `'@msg:<key>'` markers that `server.ts` resolves when it formats a `ZodError`.
+**Architecture:** A single catalogue module holds two objects, `es` and `en`. `es` is the reference type (`type Messages = typeof es`) and `en` is declared as `const en: Messages`, so a missing key or a changed parameter list is a compile error. Messages carrying data are functions. Tool handlers get the catalogue through `msg(config)`. Zod schemas are built before any config exists **and the MCP SDK validates them before it ever calls our handler**, so their messages cannot be resolved at any boundary we own: they use Zod 4's deferred error function, evaluated at parse time against a module-scoped active language set once at startup.
 
 **Tech Stack:** TypeScript 7, Zod 4, Vitest 4, `@modelcontextprotocol/sdk` 1.29.
 
@@ -258,67 +258,102 @@ git commit -m "Añadir el catálogo de mensajes verificado por el compilador (TD
 
 ---
 
-### Task 3: Message keys inside Zod schemas
+### Task 3: Localized messages inside Zod schemas
 
 **Files:**
 - Modify: `src/core/messages.ts`
-- Modify: `src/core/server.ts` (ZodError formatting)
 - Modify: `src/core/types.ts:7-9`
-- Modify: `src/tools/get_transactions.ts:5`, `src/tools/update_transaction.ts:7`, `src/tools/get_spending_summary.ts:5`, `src/tools/create_schedule.ts:5`, `src/tools/create_transaction.ts:7`
-- Modify: `src/tools/get_budget_month.ts:6`, `src/tools/set_budget.ts:6`, `src/tools/transfer_budget.ts:5`
-- Test: `tests/core/messages.test.ts`, `tests/core/server.test.ts`
+- Modify: `src/index.ts:13`
+- Modify: `src/tools/get_transactions.ts`, `src/tools/update_transaction.ts`, `src/tools/get_spending_summary.ts`, `src/tools/create_schedule.ts`, `src/tools/create_transaction.ts` (constant `DATE`)
+- Modify: `src/tools/get_budget_month.ts` (inline `month:`), `src/tools/set_budget.ts`, `src/tools/transfer_budget.ts` (constant `MONTH`)
+- Test: `tests/core/messages.test.ts`
 
 **Interfaces:**
 - Consumes: `Messages`, `messagesFor` (Task 2).
 - Produces:
-  - `export function key<K extends keyof Messages>(k: K): string` — returns `'@msg:<k>'`.
-  - `export function resolveKeys(text: string, m: Messages): string` — replaces every `@msg:<key>` marker; leaves other text untouched.
+  - `export function setMessageLanguage(lang: 'es' | 'en'): void`
+  - `export function activeMessages(): Messages`
 
-Three distinct texts cover nine sites: `dateFormat` (5 sites), `monthFormat` (3 sites), `mustBeUuid` (1 site, in `types.ts`).
+**Why not resolve at the error boundary.** The MCP SDK validates a tool's `inputSchema`
+*before* invoking the handler and throws its own `McpError`; that path never reaches
+`createServer`'s `catch`. Verified in `node_modules/@modelcontextprotocol/sdk/dist/esm/server/mcp.js`:
+
+```js
+const parseResult = await safeParseAsync(schemaToParse, args);
+if (!parseResult.success) throw new McpError(ErrorCode.InvalidParams, `Input validation error: ...`);
+```
+
+So the message has to be produced by Zod itself, at parse time. Zod 4 supports exactly that
+via a function in the error parameter. Confirmed working for both `.uuid()` and `.regex()`
+against the installed Zod 4.4.3.
+
+Three distinct texts cover nine sites: `dateFormat` (5), `monthFormat` (3), `mustBeUuid` (1).
 
 - [ ] **Step 1: Write the failing tests**
 
 Append to `tests/core/messages.test.ts`:
 
 ```ts
-import { key, resolveKeys, messagesFor } from '../../src/core/messages.js';
+import { setMessageLanguage, activeMessages, messagesFor } from '../../src/core/messages.js';
+import { ID } from '../../src/core/types.js';
+import { afterEach } from 'vitest';
 
-describe('claves de mensaje en esquemas', () => {
-  it('marca la clave de forma reconocible', () => {
-    expect(key('dateFormat')).toBe('@msg:dateFormat');
+// El idioma activo es estado de módulo: restaurarlo o se contamina el resto del fichero.
+afterEach(() => setMessageLanguage('es'));
+
+describe('idioma activo', () => {
+  it('arranca en español sin configurar nada', () => {
+    expect(activeMessages().mustBeUuid).toBe(messagesFor('es').mustBeUuid);
   });
-  it('resuelve la clave al idioma pedido', () => {
-    expect(resolveKeys(key('dateFormat'), messagesFor('es'))).toBe('Fecha en formato YYYY-MM-DD');
-    expect(resolveKeys(key('dateFormat'), messagesFor('en'))).toBe('Date in YYYY-MM-DD format');
+  it('cambia al idioma fijado', () => {
+    setMessageLanguage('en');
+    expect(activeMessages().mustBeUuid).toBe(messagesFor('en').mustBeUuid);
   });
-  it('deja intacto un texto que no es una clave', () => {
-    expect(resolveKeys('Invalid input', messagesFor('en'))).toBe('Invalid input');
+});
+
+describe('mensajes de esquema', () => {
+  it('sale en español por defecto', () => {
+    const r = ID.safeParse('no-es-uuid');
+    expect(r.success).toBe(false);
+    expect(r.error!.issues[0].message).toBe(messagesFor('es').mustBeUuid);
   });
-  it('resuelve una clave incrustada en un texto mayor', () => {
-    expect(resolveKeys(`date: ${key('dateFormat')}`, messagesFor('en'))).toBe('date: Date in YYYY-MM-DD format');
+  it('sale en inglés tras cambiar el idioma, con el MISMO esquema ya construido', () => {
+    setMessageLanguage('en');
+    const r = ID.safeParse('no-es-uuid');
+    expect(r.error!.issues[0].message).toBe(messagesFor('en').mustBeUuid);
   });
-  it('deja la marca tal cual si la clave no existe, en vez de romper', () => {
-    expect(resolveKeys('@msg:noExiste', messagesFor('es'))).toBe('@msg:noExiste');
-  });
-  it('no deja ninguna marca sin resolver en los esquemas reales', async () => {
+  it('ninguna tool deja un mensaje de esquema sin traducir', async () => {
+    // Muerde de verdad: parsea un valor inválido contra cada campo y compara los
+    // mensajes en los dos idiomas. Si un campo se quedó con un literal español
+    // fijo, sale idéntico en ambos y falla aquí.
     const { allTools } = await import('../../src/tools/index.js');
-    const declared = JSON.stringify(allTools.map((t) => t.inputSchema));
-    for (const found of declared.match(/@msg:[a-zA-Z]+/g) ?? []) {
-      const k = found.slice('@msg:'.length);
-      expect(Object.keys(messagesFor('es'))).toContain(k);
+    const sospechosos: string[] = [];
+    for (const tool of allTools) {
+      for (const [campo, esquema] of Object.entries(tool.inputSchema as Record<string, any>)) {
+        setMessageLanguage('es');
+        const es = esquema.safeParse('valor-invalido-a-proposito');
+        if (es.success) continue;
+        setMessageLanguage('en');
+        const en = esquema.safeParse('valor-invalido-a-proposito');
+        const mEs = es.error.issues[0].message, mEn = en.error!.issues[0].message;
+        // Solo interesan los mensajes NUESTROS: los que genera Zod salen igual en
+        // ambos idiomas y no son responsabilidad de esta tarea.
+        if (mEs === mEn && /^(Fecha|Mes|Debe ser)/.test(mEs)) sospechosos.push(`${tool.name}.${campo}: ${mEs}`);
+      }
     }
+    expect(sospechosos).toEqual([]);
   });
 });
 ```
 
-- [ ] **Step 2: Run and watch them fail**
+- [ ] **Step 2: Run them and watch them fail**
 
 Run: `npx vitest run tests/core/messages.test.ts`
-Expected: FAIL — `key` and `resolveKeys` are not exported.
+Expected: FAIL — `setMessageLanguage` is not exported.
 
-- [ ] **Step 3: Implement and migrate the nine sites**
+- [ ] **Step 3: Implement**
 
-Add to the `es` catalogue (and the matching `en` entries):
+Add to `src/core/messages.ts` — the three texts (verbatim Spanish, plus the English):
 
 ```ts
   dateFormat: 'Fecha en formato YYYY-MM-DD',
@@ -332,65 +367,58 @@ Add to the `es` catalogue (and the matching `en` entries):
   mustBeUuid: 'Must be a UUID (use get_accounts / get_categories / get_transactions to obtain them)',
 ```
 
-Add to `src/core/messages.ts`:
+and the module-scoped language:
 
 ```ts
-const MARKER = '@msg:';
+// Los esquemas Zod se construyen al cargar el módulo y el SDK los valida ANTES de
+// llamar al handler, así que su mensaje no puede depender de config: se resuelve
+// al parsear, contra este idioma activo. Es el único sitio donde el idioma no
+// viaja en config, y es honesto: un proceso servidor tiene un único config.
+let activo: Messages = es;
 
-/** Marca una clave para resolverla al formatear el error: los esquemas Zod se
- *  construyen al cargar el módulo, antes de que exista config. */
-export function key<K extends keyof Messages>(k: K): string {
-  return `${MARKER}${k}`;
+export function setMessageLanguage(lang: 'es' | 'en'): void {
+  activo = CATALOGUES[lang];
 }
 
-export function resolveKeys(text: string, m: Messages): string {
-  return text.replace(/@msg:([a-zA-Z]+)/g, (whole, k: string) => {
-    const value = (m as Record<string, unknown>)[k];
-    return typeof value === 'string' ? value : whole;
-  });
+export function activeMessages(): Messages {
+  return activo;
 }
 ```
 
-In `src/core/server.ts`, resolve the marker inside `invalidInputResult` (Task 2 built it):
+Migrate the nine sites. In `src/core/types.ts`:
 
 ```ts
-    issues.map((i) => `${i.path.join('.')}: ${resolveKeys(i.message, m)}`).join('; '),
+export const ID = z.string().uuid({ error: () => activeMessages().mustBeUuid });
 ```
 
-Add a test for it alongside the Task 2 ones, since the fixture message is now a key:
+In each of the five `DATE` constants:
 
 ```ts
-it('resuelve la clave del esquema al idioma del catálogo', () => {
-  const r: any = invalidInputResult([{ path: ['date'], message: key('dateFormat') }], messagesFor('en'));
-  expect(JSON.parse(r.content[0].text).error.hint).toContain('Date in YYYY-MM-DD format');
-});
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: () => activeMessages().dateFormat });
 ```
 
-Replace the nine literals with `key(...)`, e.g. in `src/tools/get_transactions.ts:5`:
+In `set_budget.ts` and `transfer_budget.ts` (`MONTH`) and inline in `get_budget_month.ts`, the
+same shape with `activeMessages().monthFormat`. Keep each file's existing regex untouched —
+only the second argument changes.
+
+Wire it at startup, in `src/index.ts` right after `loadConfig()`:
 
 ```ts
-const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, key('dateFormat'));
+  const config = loadConfig();
+  setMessageLanguage(config.messagesLang);
 ```
 
-and in `src/core/types.ts`:
-
-```ts
-export const ID = z.string().uuid(key('mustBeUuid'));
-```
-
-- [ ] **Step 4: Run and watch them pass**
+- [ ] **Step 4: Run them and watch them pass**
 
 Run: `npm test && npx tsc --noEmit`
-Expected: PASS. Existing tests asserting `/UUID/i` or the date message still pass because
-they go through `server.ts`, which resolves the marker into Spanish by default. **If any
-existing test now fails because it sees a raw `@msg:` marker, that test asserts on a path
-that does not resolve keys — fix the code path, not the test.**
+Expected: PASS. The pre-existing test `tests/tools/get_transactions.test.ts` ("rejects ids
+that are not UUIDs") passes untouched, because the schema itself now yields Spanish.
 
 - [ ] **Step 5: Commit**
 
 ```bash
-git add src/core/messages.ts src/core/server.ts src/core/types.ts src/tools/
-git commit -m "Resolver los mensajes de los esquemas Zod por clave (TDD)"
+git add src/core src/tools src/index.ts tests/core/messages.test.ts
+git commit -m "Traducir los mensajes de esquema con la función de error diferida de Zod (TDD)"
 ```
 
 ---

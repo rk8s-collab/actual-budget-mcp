@@ -101,16 +101,31 @@ language is already derivable from `config`.
 ### 4. Zod messages
 
 Zod messages are fixed when the schema is defined — at module load, before any config
-exists. So schemas carry a marked key instead of text:
+exists. Zod 4 accepts the error parameter as a **function**, evaluated at parse time:
 
 ```ts
-z.string().regex(DATE_RE, key('dateFormat'))   // key() returns '@msg:dateFormat'
+export const ID = z.string().uuid({ error: () => activeMessages().mustBeUuid });
 ```
 
-`server.ts` resolves the marker when it formats a `ZodError` into the `invalid_input` hint.
-`key()` is typed as `keyof Messages`, so an invented key does not compile. Only
-parameterless messages can be used this way, which is what schema messages are: they
-describe an expected format, not a runtime value.
+This is not a stylistic choice. **The MCP SDK validates a tool's `inputSchema` before it
+invokes the handler** (`server/mcp.js`, `validateToolInput`) and turns a failure into its own
+`McpError`, which never reaches our code:
+
+```js
+const parseResult = await safeParseAsync(schemaToParse, args);
+if (!parseResult.success) throw new McpError(ErrorCode.InvalidParams, ...);
+```
+
+So any scheme that resolves messages inside our handler or our error formatter leaves schema
+errors untranslated — and, worse, leaks whatever placeholder it used to the client. A
+deferred function is evaluated by Zod itself wherever the parse happens, so the SDK's own
+validation comes out localized with no cooperation from us.
+
+The consequence is that the language for these messages lives at module scope:
+`setMessageLanguage(config.messagesLang)` runs once at startup and `activeMessages()` reads
+it. This is the single place where the language is not threaded through `config`. It is
+honest rather than sloppy: a server process has exactly one config, so the language is
+genuinely process-global. Everything outside schemas keeps using `msg(config)`.
 
 ### Limitations
 
