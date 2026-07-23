@@ -29,6 +29,7 @@ export const tool: ToolDef = {
     // Actual no comprueba que la categoría exista: sin esto, un id inventado
     // dejaría la transacción sin categoría y la tool informaría de éxito.
     const cats = await getCategoryIndex(api);
+    const m = msg(config);
     const written: any[] = [];
     const succeeded: any[] = [];
     const unconfirmed: any[] = [];
@@ -36,20 +37,20 @@ export const tool: ToolDef = {
     for (const u of a.updates) {
       const meta = info.get(u.transaction_id);
       if (!meta) {
-        failed.push({ transaction_id: u.transaction_id, error: 'transacción no encontrada' });
+        failed.push({ transaction_id: u.transaction_id, error: m.txNotFoundPlain });
         continue;
       }
       if (meta.is_child) {
-        failed.push({ transaction_id: u.transaction_id, error: 'es una parte de un split; usa split_transaction' });
+        failed.push({ transaction_id: u.transaction_id, error: m.txIsSplitChild });
         continue;
       }
       if (meta.is_parent) {
-        failed.push({ transaction_id: u.transaction_id, error: 'es el padre de un split; la categoría vive en las partes' });
+        failed.push({ transaction_id: u.transaction_id, error: m.txIsSplitParent });
         continue;
       }
       const cat = cats.get(u.category_id);
       if (!cat) {
-        failed.push({ transaction_id: u.transaction_id, error: categoryNotFound(msg(config), u.category_id) });
+        failed.push({ transaction_id: u.transaction_id, error: categoryNotFound(m, u.category_id) });
         continue;
       }
       try {
@@ -76,7 +77,7 @@ export const tool: ToolDef = {
       succeeded,
       failed,
       ...(unconfirmed.length > 0
-        ? { unconfirmed, note: 'Se enviaron pero no se pudieron confirmar releyendo; vuelve a consultar esas transacciones antes de darlas por categorizadas' }
+        ? { unconfirmed, note: m.unconfirmedWrites }
         : {}),
     };
   },

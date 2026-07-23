@@ -148,6 +148,18 @@ describe('categorize_transactions', () => {
     expect(r.success_count + r.failure_count + r.unconfirmed_count).toBe(r.total);
   });
 
+  it('reporta los fallos por ítem en el idioma configurado', async () => {
+    const api = mockApi({
+      getCategoryGroups: vi.fn(async () => GROUPS),
+      runQuery: async () => ({ data: [] }), // ninguna transacción existe
+    });
+    const r: any = await tool.handler(
+      { updates: [{ transaction_id: T1, category_id: C1 }] },
+      { api, config: { ...testConfig, messagesLang: 'en' } },
+    );
+    expect(r.failed[0].error).toMatch(/not found/i);
+  });
+
   it('rejects more than 50 updates', async () => {
     const updates = Array.from({ length: 51 }, (_, i) => ({
       transaction_id: `${String(i).padStart(8, '0')}-1111-4111-8111-111111111111`,

@@ -19,15 +19,14 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
+    const m = msg(config);
     const cat = (await getCategoryIndex(api)).get(a.category_id);
-    if (!cat) throw new Error(categoryNotFound(msg(config), a.category_id));
+    if (!cat) throw new Error(categoryNotFound(m, a.category_id));
     const name = cat.name;
     // api.getNote devuelve {id, note} | null, no un string.
     const before = ((await api.getNote(a.category_id)) as any)?.note ?? null;
     if (a.note === '' && !a.clear) {
-      throw new Error(
-        `An empty note erases the existing note of "${name}". Pass clear: true to confirm.`,
-      );
+      throw new Error(m.emptyNoteRequiresClear(name));
     }
     await api.updateNote(a.category_id, a.note);
     const stored = await api.getNote(a.category_id);

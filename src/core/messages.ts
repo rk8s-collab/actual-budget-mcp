@@ -36,6 +36,22 @@ const es = {
   splitParentAmount: (id: string) =>
     `La transacción ${id} es el padre de un split: importe y categoría viven en las partes; usa split_transaction para redividirla (notas, fecha, cleared y pagador sí se pueden editar aquí)`,
   echoPending: 'La escritura se envió pero aún no se refleja al releer; vuelve a consultar la transacción para confirmarla',
+  transferSourceMissing: (month: string, id: string) => `Categoría origen no encontrada en ${month}: ${id}`,
+  transferTargetMissing: (month: string, id: string) => `Categoría destino no encontrada en ${month}: ${id}`,
+  transferRolledBack: (cause: string) =>
+    `No se pudo abonar en destino (${cause}); el traspaso se ha revertido y no se ha movido nada`,
+  transferRollbackFailed: (cause: string, rollbackCause: string, categoryName: string) =>
+    `No se pudo abonar en destino (${cause}) y ADEMÁS falló la reversión del origen (${rollbackCause}); revisa ${categoryName} en Actual`,
+  txNotFoundPlain: 'transacción no encontrada',
+  txIsSplitChild: 'es una parte de un split; usa split_transaction',
+  txIsSplitParent: 'es el padre de un split; la categoría vive en las partes',
+  unconfirmedWrites: 'Se enviaron pero no se pudieron confirmar releyendo; vuelve a consultar esas transacciones antes de darlas por categorizadas',
+  createSplitsMismatch: (sum: string, total: string) =>
+    `Las partes difieren del total: suman ${sum} y el importe es ${total}`,
+  emptyNoteRequiresClear: (name: string) =>
+    `Una nota vacía borra la nota existente de "${name}". Pasa clear: true para confirmar.`,
+  payeeNotFound: (name: string, options: string[]) =>
+    `Pagador no encontrado: "${name}"${options.length ? ` — ¿quizá: ${options.join(', ')}?` : ''}`,
 };
 
 export type Messages = typeof es;
@@ -71,6 +87,22 @@ const en: Messages = {
   splitParentAmount: (id: string) =>
     `Transaction ${id} is the parent of a split: amount and category live in the parts; use split_transaction to re-split it (notes, date, cleared and payee can be edited here)`,
   echoPending: 'The write was sent but is not yet reflected on re-read; query the transaction again to confirm it',
+  transferSourceMissing: (month: string, id: string) => `Source category not found in ${month}: ${id}`,
+  transferTargetMissing: (month: string, id: string) => `Target category not found in ${month}: ${id}`,
+  transferRolledBack: (cause: string) =>
+    `Could not credit the target (${cause}); the transfer was rolled back and nothing was moved`,
+  transferRollbackFailed: (cause: string, rollbackCause: string, categoryName: string) =>
+    `Could not credit the target (${cause}) and the source rollback ALSO failed (${rollbackCause}); check ${categoryName} in Actual`,
+  txNotFoundPlain: 'transaction not found',
+  txIsSplitChild: 'it is part of a split; use split_transaction',
+  txIsSplitParent: 'it is the parent of a split; the category lives in the parts',
+  unconfirmedWrites: 'They were sent but could not be confirmed by re-reading; query those transactions again before considering them categorized',
+  createSplitsMismatch: (sum: string, total: string) =>
+    `The parts differ from the total: they sum ${sum} and the amount is ${total}`,
+  emptyNoteRequiresClear: (name: string) =>
+    `An empty note erases the existing note of "${name}". Pass clear: true to confirm.`,
+  payeeNotFound: (name: string, options: string[]) =>
+    `Payee not found: "${name}"${options.length ? ` — maybe: ${options.join(', ')}?` : ''}`,
 };
 
 const CATALOGUES: Record<'es' | 'en', Messages> = { es, en };

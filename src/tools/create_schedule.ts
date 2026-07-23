@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { toCents, moneyFields } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
-import { activeMessages } from '../core/messages.js';
+import { activeMessages, msg } from '../core/messages.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: () => activeMessages().dateFormat });
 
@@ -32,12 +32,13 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
+    const m = msg(config);
     const payees = await api.getPayees();
     const wanted = a.payee_name.trim().toLowerCase();
     const payee = (payees as any[]).find((p) => (p.name ?? '').trim().toLowerCase() === wanted);
     if (!payee) {
       const options = (payees as any[]).map((p) => p.name).filter((n) => (n ?? '').toLowerCase().includes(wanted.slice(0, 4))).slice(0, 5);
-      throw new Error(`Pagador no encontrado: "${a.payee_name}"${options.length ? ` — ¿quizá: ${options.join(', ')}?` : ''}`);
+      throw new Error(m.payeeNotFound(a.payee_name, options));
     }
 
     let date: any;

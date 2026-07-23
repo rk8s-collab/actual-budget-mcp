@@ -31,12 +31,13 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
+    const m = msg(config);
     // Actual acepta cualquier id de categoría: si no existe, la transacción se
     // crea sin categoría y nadie se entera. Validamos antes de escribir.
     const wanted = [...(a.category_id ? [a.category_id] : []), ...(a.splits?.map((s) => s.category_id) ?? [])];
     if (wanted.length > 0) {
       const cats = await getCategoryIndex(api);
-      for (const id of wanted) if (!cats.has(id)) throw new Error(categoryNotFound(msg(config), id));
+      for (const id of wanted) if (!cats.has(id)) throw new Error(categoryNotFound(m, id));
     }
     const cents = toCents(a.amount);
     const tx: any = { date: a.date, amount: cents };
@@ -49,7 +50,10 @@ export const tool: ToolDef = {
       const sum = parts.reduce((s, p) => s + p.amount, 0);
       if (sum !== cents) {
         throw new Error(
-          `Las partes difieren del total: suman ${formatAmount(sum, config.locale, config.currency)} y el importe es ${formatAmount(cents, config.locale, config.currency)}`,
+          m.createSplitsMismatch(
+            formatAmount(sum, config.locale, config.currency),
+            formatAmount(cents, config.locale, config.currency),
+          ),
         );
       }
       tx.subtransactions = parts;
@@ -62,9 +66,7 @@ export const tool: ToolDef = {
     const fresh = newId ? await getTransactionById(api, newId) : null;
     return {
       created: true,
-      ...(ambiguous
-        ? { note: 'Aparecieron varias filas nuevas con la misma cuenta, fecha e importe; se devuelve la primera. Revisa posibles duplicados en Actual' }
-        : {}),
+      ...(ambiguous ? { note: m.ambiguousNewRow } : {}),
       transaction: mapTxEcho(fresh ?? { ...tx, id: newId ?? 'unknown', account: a.account_id }, config.locale, config.currency),
     };
   },

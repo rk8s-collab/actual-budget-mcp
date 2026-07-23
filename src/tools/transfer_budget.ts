@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { toCents, moneyFields } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
-import { activeMessages } from '../core/messages.js';
+import { activeMessages, msg } from '../core/messages.js';
 
 const MONTH = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, { error: () => activeMessages().monthFormat });
 
@@ -24,14 +24,15 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
+    const messages = msg(config);
     const cents = toCents(a.amount);
     const m = await api.getBudgetMonth(a.month);
     const cats = new Map<string, any>();
     for (const g of m.categoryGroups ?? []) for (const c of g.categories ?? []) cats.set(c.id, c);
     const from = cats.get(a.from_category_id);
     const to = cats.get(a.to_category_id);
-    if (!from) throw new Error(`Categoría origen no encontrada en ${a.month}: ${a.from_category_id}`);
-    if (!to) throw new Error(`Categoría destino no encontrada en ${a.month}: ${a.to_category_id}`);
+    if (!from) throw new Error(messages.transferSourceMissing(a.month, a.from_category_id));
+    if (!to) throw new Error(messages.transferTargetMissing(a.month, a.to_category_id));
 
     const newFrom = (from.budgeted ?? 0) - cents;
     const newTo = (to.budgeted ?? 0) + cents;
@@ -51,13 +52,9 @@ export const tool: ToolDef = {
         rollbackMsg = (rollbackErr as Error).message;
       }
       if (rolledBack) {
-        throw new Error(
-          `No se pudo abonar en destino (${(err as Error).message}); el traspaso se ha revertido y no se ha movido nada`,
-        );
+        throw new Error(messages.transferRolledBack((err as Error).message));
       }
-      throw new Error(
-        `No se pudo abonar en destino (${(err as Error).message}) y ADEMÁS falló la reversión del origen (${rollbackMsg}); revisa ${from.name} en Actual`,
-      );
+      throw new Error(messages.transferRollbackFailed((err as Error).message, rollbackMsg, from.name));
     }
 
     const fmt = (c: number) => moneyFields(c, config.locale, config.currency);
