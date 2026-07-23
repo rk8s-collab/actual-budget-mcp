@@ -3,7 +3,7 @@ import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents } from '../core/money.js';
 import { getTransactionById, mapTxEcho, readBack } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
-import { activeMessages } from '../core/messages.js';
+import { activeMessages, msg } from '../core/messages.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: () => activeMessages().dateFormat });
 
@@ -58,7 +58,7 @@ export const tool: ToolDef = {
     // índice si realmente viene category_id.
     if (a.category_id !== undefined) {
       const cats = await getCategoryIndex(api);
-      if (!cats.has(a.category_id)) throw new Error(categoryNotFound(a.category_id));
+      if (!cats.has(a.category_id)) throw new Error(categoryNotFound(msg(config), a.category_id));
     }
     // payee_name se resuelve a un id: el campo crudo payee_name lo rechaza conform().
     if (a.payee_name !== undefined) {

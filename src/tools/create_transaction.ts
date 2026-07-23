@@ -3,7 +3,7 @@ import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
 import { candidateIds, newIdFromDiff, getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
-import { activeMessages } from '../core/messages.js';
+import { activeMessages, msg } from '../core/messages.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: () => activeMessages().dateFormat });
 
@@ -36,7 +36,7 @@ export const tool: ToolDef = {
     const wanted = [...(a.category_id ? [a.category_id] : []), ...(a.splits?.map((s) => s.category_id) ?? [])];
     if (wanted.length > 0) {
       const cats = await getCategoryIndex(api);
-      for (const id of wanted) if (!cats.has(id)) throw new Error(categoryNotFound(id));
+      for (const id of wanted) if (!cats.has(id)) throw new Error(categoryNotFound(msg(config), id));
     }
     const cents = toCents(a.amount);
     const tx: any = { date: a.date, amount: cents };

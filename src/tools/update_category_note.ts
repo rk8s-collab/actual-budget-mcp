@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { ID, type ToolDef } from '../core/types.js';
+import { msg } from '../core/messages.js';
 
 const input = {
   category_id: ID.describe('Category UUID (from get_categories)'),
@@ -16,10 +17,10 @@ export const tool: ToolDef = {
   readOnly: false,
   annotations: { destructiveHint: true, idempotentHint: true },
   inputSchema: input,
-  handler: async (raw, { api }) => {
+  handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
     const cat = (await getCategoryIndex(api)).get(a.category_id);
-    if (!cat) throw new Error(categoryNotFound(a.category_id));
+    if (!cat) throw new Error(categoryNotFound(msg(config), a.category_id));
     const name = cat.name;
     // api.getNote devuelve {id, note} | null, no un string.
     const before = ((await api.getNote(a.category_id)) as any)?.note ?? null;

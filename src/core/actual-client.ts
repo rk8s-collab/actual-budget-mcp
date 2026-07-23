@@ -8,6 +8,7 @@
 // Todo log va a stderr (stdout es el canal MCP).
 import * as fs from 'node:fs';
 import type { Config } from './config.js';
+import { msg } from './messages.js';
 
 // El servidor stdio se arranca UNA VEZ POR CLIENTE conectado (Claude Desktop, Claude Code,
 // bridges...). Actual no permite que dos procesos abran el mismo presupuesto: el segundo
@@ -70,8 +71,7 @@ export class ActualClient {
         await this.openBudgetIn(fallback);
       } catch (err2) {
         throw new Error(
-          `No se pudo abrir el presupuesto ni en ${this.config.dataDir} (${first}) ni en la copia propia ${fallback} (${(err2 as Error).message}). ` +
-            'Si tienes varios clientes MCP conectados a la vez, cierra los que no uses o da a cada uno su propio ACTUAL_DATA_DIR.',
+          msg(this.config).budgetOpenFailed(this.config.dataDir, first, fallback, (err2 as Error).message),
         );
       }
     }
@@ -114,9 +114,10 @@ export class ActualClient {
             return { stale: false, lastSynced: new Date(this.lastSyncMs).toISOString() };
           }
           throw new Error(
-            'El presupuesto de Actual está cerrado y no se pudo volver a abrir ' +
-              `(causa original: ${(err as Error).message}). Reinicia el servidor MCP; si el ` +
-              `error persiste, revisa el log de arranque y que ${this.activeDataDir ?? this.config.dataDir} sea accesible.`,
+            msg(this.config).budgetClosed(
+              (err as Error).message,
+              this.activeDataDir ?? this.config.dataDir,
+            ),
           );
         }
         if (opts.forWrite) throw err;

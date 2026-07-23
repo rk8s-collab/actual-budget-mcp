@@ -3,6 +3,7 @@ import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
 import { candidateIds, newIdFromDiff, getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
+import { msg } from '../core/messages.js';
 
 const input = {
   transaction_id: ID,
@@ -61,7 +62,7 @@ export const tool: ToolDef = {
     // la parte sin categoría en silencio, y el split ya no es reversible sin trabajo.
     const cats = await getCategoryIndex(api);
     for (const p of parts) {
-      if (!cats.has(p.category)) throw new Error(categoryNotFound(p.category));
+      if (!cats.has(p.category)) throw new Error(categoryNotFound(msg(config), p.category));
     }
 
     // Crear primero, borrar después: un fallo intermedio deja un duplicado visible, nunca pérdida de datos.

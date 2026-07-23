@@ -38,6 +38,37 @@ describe('idioma activo', () => {
   });
 });
 
+describe('mensajes del core (Tarea 4)', () => {
+  it('traduce los mensajes con datos conservando los parámetros', () => {
+    const es = messagesFor('es'), en = messagesFor('en');
+    expect(es.categoryNotFound('abc')).toContain('abc');
+    expect(en.categoryNotFound('abc')).toContain('abc');
+    expect(en.categoryNotFound('abc')).not.toBe(es.categoryNotFound('abc'));
+  });
+  it('budgetClosed conserva causa y directorio y cambia de idioma', () => {
+    const es = messagesFor('es'), en = messagesFor('en');
+    expect(es.budgetClosed('offline', '/tmp/x')).toContain('offline');
+    expect(es.budgetClosed('offline', '/tmp/x')).toContain('/tmp/x');
+    expect(en.budgetClosed('offline', '/tmp/x')).toContain('offline');
+    expect(en.budgetClosed('offline', '/tmp/x')).not.toBe(es.budgetClosed('offline', '/tmp/x'));
+  });
+  it('budgetOpenFailed conserva los dos directorios y las dos causas', () => {
+    const es = messagesFor('es'), en = messagesFor('en');
+    const s = es.budgetOpenFailed('/a', 'e1', '/b', 'e2');
+    expect(s).toContain('/a');
+    expect(s).toContain('e1');
+    expect(s).toContain('/b');
+    expect(s).toContain('e2');
+    expect(en.budgetOpenFailed('/a', 'e1', '/b', 'e2')).not.toBe(s);
+  });
+  it('invalidToolName conserva el nombre y cambia de idioma', () => {
+    const es = messagesFor('es'), en = messagesFor('en');
+    expect(es.invalidToolName('bad.name')).toContain('bad.name');
+    expect(en.invalidToolName('bad.name')).toContain('bad.name');
+    expect(en.invalidToolName('bad.name')).not.toBe(es.invalidToolName('bad.name'));
+  });
+});
+
 describe('mensajes de esquema', () => {
   it('sale en español por defecto', () => {
     const r = ID.safeParse('no-es-uuid');

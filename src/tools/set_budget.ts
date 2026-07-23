@@ -2,7 +2,7 @@ import { z } from 'zod';
 import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents, moneyFields } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
-import { activeMessages } from '../core/messages.js';
+import { activeMessages, msg } from '../core/messages.js';
 
 const MONTH = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, { error: () => activeMessages().monthFormat });
 
@@ -33,7 +33,7 @@ export const tool: ToolDef = {
       for (const op of a.operations) {
         const cat = cats.get(op.category_id);
         if (!cat) {
-          failed.push({ month: op.month, category_id: op.category_id, error: categoryNotFound(op.category_id) });
+          failed.push({ month: op.month, category_id: op.category_id, error: categoryNotFound(msg(config), op.category_id) });
           continue;
         }
         try {

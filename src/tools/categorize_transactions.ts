@@ -2,6 +2,7 @@ import { z } from 'zod';
 import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { readBackCategories } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
+import { msg } from '../core/messages.js';
 
 const input = {
   updates: z.array(z.object({
@@ -17,7 +18,7 @@ export const tool: ToolDef = {
   readOnly: false,
   annotations: { destructiveHint: true, idempotentHint: true },
   inputSchema: input,
-  handler: async (raw, { api }) => {
+  handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
     // Pre-lectura por lote: detecta hijos/padres de split e ids inexistentes antes de escribir.
     const ids = a.updates.map((u) => u.transaction_id);
@@ -48,7 +49,7 @@ export const tool: ToolDef = {
       }
       const cat = cats.get(u.category_id);
       if (!cat) {
-        failed.push({ transaction_id: u.transaction_id, error: categoryNotFound(u.category_id) });
+        failed.push({ transaction_id: u.transaction_id, error: categoryNotFound(msg(config), u.category_id) });
         continue;
       }
       try {
