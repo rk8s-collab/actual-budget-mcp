@@ -5,6 +5,7 @@ import { ZodError } from 'zod';
 import type { Config } from './config.js';
 import type { ToolDef, ToolContext } from './types.js';
 import type { ActualClient } from './actual-client.js';
+import { msg, type Messages } from './messages.js';
 
 export function buildToolResult(
   payload: unknown,
@@ -33,6 +34,18 @@ function errorResult(code: string, message: string, hint?: string) {
   };
 }
 
+/** Pura y exportada para poder testearla sin montar un McpServer (como buildToolResult). */
+export function invalidInputResult(
+  issues: { path: PropertyKey[]; message: string }[],
+  m: Messages,
+) {
+  return errorResult(
+    'invalid_input',
+    m.invalidInput,
+    issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
+  );
+}
+
 export function createServer(deps: {
   tools: ToolDef[];
   client: ActualClient;
@@ -59,13 +72,7 @@ export function createServer(deps: {
           const payload = await tool.handler(input ?? {}, ctx);
           return buildToolResult(payload, meta);
         } catch (err) {
-          if (err instanceof ZodError) {
-            return errorResult(
-              'invalid_input',
-              'Entrada inválida',
-              err.issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
-            );
-          }
+          if (err instanceof ZodError) return invalidInputResult(err.issues, msg(deps.config));
           console.error(`[actual-mcp] Error en ${tool.name}:`, err);
           return errorResult('tool_failed', `${tool.name}: ${(err as Error).message}`);
         }

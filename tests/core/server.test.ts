@@ -1,5 +1,6 @@
 import { describe, it, expect } from 'vitest';
-import { buildToolResult } from '../../src/core/server.js';
+import { buildToolResult, invalidInputResult } from '../../src/core/server.js';
+import { messagesFor } from '../../src/core/messages.js';
 
 describe('buildToolResult', () => {
   it('wraps payload as text + structuredContent', () => {
@@ -15,5 +16,24 @@ describe('buildToolResult', () => {
   it('does not spread stale flags into array payloads', () => {
     const r = buildToolResult([{ a: 1 }], { stale: true, lastSynced: 'x' });
     expect(r.structuredContent).toEqual({ items: [{ a: 1 }], stale_data: true, last_synced: 'x' });
+  });
+});
+
+describe('invalidInputResult', () => {
+  const issues = [{ path: ['date'], message: 'Fecha en formato YYYY-MM-DD' }];
+  it('titula el error en español por defecto', () => {
+    const r: any = invalidInputResult(issues, messagesFor('es'));
+    expect(JSON.parse(r.content[0].text).error.message).toBe('Entrada inválida');
+  });
+  it('titula el error en inglés cuando se pide', () => {
+    const r: any = invalidInputResult(issues, messagesFor('en'));
+    expect(JSON.parse(r.content[0].text).error.message).toBe('Invalid input');
+  });
+  it('conserva la ruta del campo en el hint', () => {
+    const r: any = invalidInputResult(issues, messagesFor('es'));
+    expect(JSON.parse(r.content[0].text).error.hint).toContain('date:');
+  });
+  it('marca el resultado como error', () => {
+    expect((invalidInputResult(issues, messagesFor('es')) as any).isError).toBe(true);
   });
 });
