@@ -78,3 +78,14 @@ describe('manifest ↔ code consistency', () => {
     expect(manifest.user_config.enable_write.default).toBe(false);
   });
 });
+
+describe('icon', () => {
+  it('ships a 256x256 PNG next to the manifest', () => {
+    const file = path.join(root, manifest.icon as string);
+    const buf = readFileSync(file);
+    // Cabecera PNG y dimensiones en el chunk IHDR (bytes 16-23, big-endian)
+    expect(buf.subarray(1, 4).toString()).toBe('PNG');
+    expect(buf.readUInt32BE(16)).toBe(256);
+    expect(buf.readUInt32BE(20)).toBe(256);
+  });
+});
