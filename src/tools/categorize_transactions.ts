@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
+import { getCategoryIndex } from '../core/categories.js';
 import { readBackCategories } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
 import { msg } from '../core/messages.js';
@@ -37,20 +37,20 @@ export const tool: ToolDef = {
     for (const u of a.updates) {
       const meta = info.get(u.transaction_id);
       if (!meta) {
-        failed.push({ transaction_id: u.transaction_id, error: m.txNotFoundPlain });
+        failed.push({ transaction_id: u.transaction_id, error: m.txNotFoundItem });
         continue;
       }
       if (meta.is_child) {
-        failed.push({ transaction_id: u.transaction_id, error: m.txIsSplitChild });
+        failed.push({ transaction_id: u.transaction_id, error: m.splitChildItem });
         continue;
       }
       if (meta.is_parent) {
-        failed.push({ transaction_id: u.transaction_id, error: m.txIsSplitParent });
+        failed.push({ transaction_id: u.transaction_id, error: m.splitParentItem });
         continue;
       }
       const cat = cats.get(u.category_id);
       if (!cat) {
-        failed.push({ transaction_id: u.transaction_id, error: categoryNotFound(m, u.category_id) });
+        failed.push({ transaction_id: u.transaction_id, error: m.categoryNotFound(u.category_id) });
         continue;
       }
       try {

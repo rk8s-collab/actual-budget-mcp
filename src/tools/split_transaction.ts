@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
+import { getCategoryIndex } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
 import { candidateIds, newIdFromDiff, getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
@@ -33,7 +33,7 @@ export const tool: ToolDef = {
       .parse(raw ?? {});
     const orig = await getTransactionById(api, transaction_id);
     if (!orig) throw new Error(m.txNotFound(transaction_id));
-    if (orig.transfer_id) throw new Error(m.isTransfer);
+    if (orig.transfer_id) throw new Error(m.cannotSplitTransfer);
     if (orig.is_parent || (Array.isArray(orig.subtransactions) && orig.subtransactions.length > 0)) {
       throw new Error(m.alreadySplit);
     }
@@ -67,7 +67,7 @@ export const tool: ToolDef = {
     // la parte sin categoría en silencio, y el split ya no es reversible sin trabajo.
     const cats = await getCategoryIndex(api);
     for (const p of parts) {
-      if (!cats.has(p.category)) throw new Error(categoryNotFound(m, p.category));
+      if (!cats.has(p.category)) throw new Error(m.categoryNotFound(p.category));
     }
 
     // Crear primero, borrar después: un fallo intermedio deja un duplicado visible, nunca pérdida de datos.

@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
+import { getCategoryIndex } from '../core/categories.js';
 import { toCents, moneyFields } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
 import { activeMessages, msg } from '../core/messages.js';
@@ -25,6 +25,7 @@ export const tool: ToolDef = {
   inputSchema: input,
   handler: async (raw, { api, config }) => {
     const a = schema.parse(raw ?? {});
+    const m = msg(config);
     const succeeded: any[] = [];
     const failed: any[] = [];
     // Sin esta comprobación, un id inventado escribiría una celda huérfana.
@@ -33,7 +34,7 @@ export const tool: ToolDef = {
       for (const op of a.operations) {
         const cat = cats.get(op.category_id);
         if (!cat) {
-          failed.push({ month: op.month, category_id: op.category_id, error: categoryNotFound(msg(config), op.category_id) });
+          failed.push({ month: op.month, category_id: op.category_id, error: m.categoryNotFound(op.category_id) });
           continue;
         }
         try {

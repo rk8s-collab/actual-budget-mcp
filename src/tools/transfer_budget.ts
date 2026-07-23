@@ -31,8 +31,8 @@ export const tool: ToolDef = {
     for (const g of budgetMonth.categoryGroups ?? []) for (const c of g.categories ?? []) cats.set(c.id, c);
     const from = cats.get(a.from_category_id);
     const to = cats.get(a.to_category_id);
-    if (!from) throw new Error(m.transferSourceMissing(a.month, a.from_category_id));
-    if (!to) throw new Error(m.transferTargetMissing(a.month, a.to_category_id));
+    if (!from) throw new Error(m.transferSourceNotFound(a.month, a.from_category_id));
+    if (!to) throw new Error(m.transferTargetNotFound(a.month, a.to_category_id));
 
     const newFrom = (from.budgeted ?? 0) - cents;
     const newTo = (to.budgeted ?? 0) + cents;

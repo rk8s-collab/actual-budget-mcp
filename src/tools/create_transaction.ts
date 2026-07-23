@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
+import { getCategoryIndex } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
 import { candidateIds, newIdFromDiff, getTransactionById, mapTxEcho } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
@@ -37,7 +37,7 @@ export const tool: ToolDef = {
     const wanted = [...(a.category_id ? [a.category_id] : []), ...(a.splits?.map((s) => s.category_id) ?? [])];
     if (wanted.length > 0) {
       const cats = await getCategoryIndex(api);
-      for (const id of wanted) if (!cats.has(id)) throw new Error(categoryNotFound(m, id));
+      for (const id of wanted) if (!cats.has(id)) throw new Error(m.categoryNotFound(id));
     }
     const cents = toCents(a.amount);
     const tx: any = { date: a.date, amount: cents };
