@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { moneyFields } from '../core/money.js';
 import type { ToolDef } from '../core/types.js';
+import { key } from '../core/messages.js';
 
-const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, key('dateFormat'));
 
 const input = {
   start_date: DATE,

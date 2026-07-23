@@ -1,8 +1,9 @@
-import { z } from 'zod';
+import { z, ZodError } from 'zod';
 import { moneyFields, toCents } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
+import { key, msg, resolveKeys } from '../core/messages.js';
 
-const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, key('dateFormat'));
 
 const input = {
   start_date: DATE.describe('Start date YYYY-MM-DD'),
@@ -25,7 +26,18 @@ export const tool: ToolDef = {
   readOnly: true,
   inputSchema: input,
   handler: async (raw, { api, config }) => {
-    const a = schema.parse(raw ?? {});
+    let a: z.infer<typeof schema>;
+    try {
+      a = schema.parse(raw ?? {});
+    } catch (err) {
+      // Este handler se invoca también directamente en tests (sin pasar por el
+      // catch de server.ts), así que resolvemos aquí la clave del esquema para
+      // que el mensaje de la excepción ya llegue en el idioma configurado.
+      if (err instanceof ZodError) {
+        throw new ZodError(err.issues.map((i) => ({ ...i, message: resolveKeys(i.message, msg(config)) })));
+      }
+      throw err;
+    }
     const filters: any[] = [{ date: { $gte: a.start_date, $lte: a.end_date } }, { is_parent: false }];
     if (!a.include_transfers) filters.push({ transfer_id: null });
     if (a.account_id) filters.push({ account: a.account_id });

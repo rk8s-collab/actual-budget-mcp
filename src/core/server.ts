@@ -5,7 +5,7 @@ import { ZodError } from 'zod';
 import type { Config } from './config.js';
 import type { ToolDef, ToolContext } from './types.js';
 import type { ActualClient } from './actual-client.js';
-import { msg, type Messages } from './messages.js';
+import { msg, resolveKeys, type Messages } from './messages.js';
 
 export function buildToolResult(
   payload: unknown,
@@ -42,7 +42,7 @@ export function invalidInputResult(
   return errorResult(
     'invalid_input',
     m.invalidInput,
-    issues.map((i) => `${i.path.join('.')}: ${i.message}`).join('; '),
+    issues.map((i) => `${i.path.join('.')}: ${resolveKeys(i.message, m)}`).join('; '),
   );
 }
 

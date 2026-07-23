@@ -3,8 +3,9 @@ import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents } from '../core/money.js';
 import { getTransactionById, mapTxEcho, readBack } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
+import { key } from '../core/messages.js';
 
-const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, key('dateFormat'));
 
 const input = {
   transaction_id: ID,

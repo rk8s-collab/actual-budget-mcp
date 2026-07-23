@@ -1,12 +1,11 @@
 // types.ts — contratos compartidos por todas las tools.
 import { z, type ZodRawShape } from 'zod';
 import type { Config } from './config.js';
+import { key } from './messages.js';
 
 /** Ids de Actual. UUID estricto: el compilador AQL interpola los valores de tipo
  *  `id` en el SQL sin escaparlos, así que la validación es la única barrera. */
-export const ID = z
-  .string()
-  .uuid('Debe ser un UUID (usa get_accounts / get_categories / get_transactions para obtenerlos)');
+export const ID = z.string().uuid(key('mustBeUuid'));
 
 export interface ToolContext {
   api: any;            // @actual-app/api module (injected; mocked in tests)
