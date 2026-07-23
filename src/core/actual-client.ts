@@ -3,6 +3,8 @@
 // - Primera llamada: init(...) + downloadBudget(syncId) y una sincronización inicial.
 // - Llamadas posteriores: sync() solo si expiró el TTL.
 // - Si sync() falla: las lecturas devuelven {stale:true}; las escrituras (forWrite) relanzan.
+//   Excepción: si el presupuesto ha quedado CERRADO no hay copia local que servir —
+//   se reabre una vez y, si sigue cerrado, se relanza con un mensaje legible.
 // Todo log va a stderr (stdout es el canal MCP).
 import * as fs from 'node:fs';
 import type { Config } from './config.js';
@@ -12,6 +14,9 @@ import type { Config } from './config.js';
 // recibe "We had an unknown problem opening ...". Cuando eso pasa, caemos a una copia propia
 // por instancia en lugar de fallar; ver openBudget().
 const BUSY_PATTERN = /problem opening|already open|is open|locked|SQLITE_BUSY|EBUSY/i;
+
+// checkFileOpen() de la API lanza este mensaje cuando no hay presupuesto abierto.
+const BUDGET_CLOSED_PATTERN = /No budget file is open/i;
 
 export class ActualClient {
   private initialized = false;
@@ -99,6 +104,21 @@ export class ActualClient {
         await this.api.sync();
         this.lastSyncMs = this.now();
       } catch (err) {
+        // Un sync fallido no implica que la copia local siga consultable: loot-core cierra
+        // el presupuesto cuando no logra abrir la base. Servir {stale:true} en ese estado
+        // hacía que la consulta posterior muriera con "No budget file is open".
+        if (!(await this.isBudgetOpen())) {
+          console.error('[actual-mcp] el presupuesto está cerrado; reabriendo…');
+          if (await this.reopen()) {
+            this.lastSyncMs = this.now();
+            return { stale: false, lastSynced: new Date(this.lastSyncMs).toISOString() };
+          }
+          throw new Error(
+            'El presupuesto de Actual está cerrado y no se pudo volver a abrir ' +
+              `(causa original: ${(err as Error).message}). Reinicia el servidor MCP; si el ` +
+              `error persiste, revisa el log de arranque y que ${this.activeDataDir ?? this.config.dataDir} sea accesible.`,
+          );
+        }
         if (opts.forWrite) throw err;
         console.error('[actual-mcp] sync falló; sirviendo copia local:', (err as Error).message);
         return {
@@ -111,6 +131,31 @@ export class ActualClient {
       stale: false,
       lastSynced: this.lastSyncMs !== null ? new Date(this.lastSyncMs).toISOString() : null,
     };
+  }
+
+  // Sonda barata y local: getBudgetMonths() pasa por checkFileOpen() en la API.
+  // Cualquier otro fallo (base corrupta, etc.) no es "cerrado" y no debe disparar la reapertura.
+  private async isBudgetOpen(): Promise<boolean> {
+    try {
+      await this.api.getBudgetMonths();
+      return true;
+    } catch (err) {
+      return !BUDGET_CLOSED_PATTERN.test((err as Error).message ?? '');
+    }
+  }
+
+  // Un único reintento. downloadBudget() reabre el presupuesto local o lo vuelve a bajar;
+  // el sync() posterior es la prueba de que quedó realmente abierto (la API lee las prefs
+  // antes de sincronizar, así que con el presupuesto cerrado siempre falla).
+  private async reopen(): Promise<boolean> {
+    try {
+      await this.api.downloadBudget(this.config.syncId);
+      await this.api.sync();
+      return true;
+    } catch (err) {
+      console.error('[actual-mcp] no se pudo reabrir el presupuesto:', (err as Error).message);
+      return false;
+    }
   }
 
   async shutdown(): Promise<void> {
