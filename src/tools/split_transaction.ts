@@ -27,19 +27,20 @@ export const tool: ToolDef = {
     // Los guards del objetivo (existe, no es transferencia, no está ya dividido) son
     // más fundamentales que la cardinalidad de partes: se validan ANTES del schema
     // completo para que un transfer devuelva su error propio aunque llegue 1 sola parte.
+    const m = msg(config);
     const { transaction_id, force } = z
       .object({ transaction_id: input.transaction_id, force: input.force })
       .parse(raw ?? {});
     const orig = await getTransactionById(api, transaction_id);
-    if (!orig) throw new Error(`Transacción no encontrada: ${transaction_id}`);
-    if (orig.transfer_id) throw new Error('No se puede dividir una transferencia entre cuentas');
+    if (!orig) throw new Error(m.txNotFound(transaction_id));
+    if (orig.transfer_id) throw new Error(m.isTransfer);
     if (orig.is_parent || (Array.isArray(orig.subtransactions) && orig.subtransactions.length > 0)) {
-      throw new Error('La transacción ya está dividida; edita sus partes en Actual o deshaz el split primero');
+      throw new Error(m.alreadySplit);
     }
     // Dividir reemplaza la transacción: si estaba conciliada, la conciliación cerrada
     // se rompe en silencio. Exigimos confirmación explícita.
     if (orig.reconciled && !force) {
-      throw new Error('La transacción está conciliada; dividirla rompería la conciliación. Vuelve a intentarlo con force: true si estás seguro');
+      throw new Error(m.reconciledNeedsForce);
     }
 
     const a = schema.parse(raw ?? {});
@@ -52,9 +53,13 @@ export const tool: ToolDef = {
     const sum = parts.reduce((s, p) => s + p.amount, 0);
     if (sum !== totalCents) {
       const diff = totalCents - sum;
-      const word = diff > 0 ? 'faltan' : 'sobran';
       throw new Error(
-        `Las partes difieren del total: suman ${formatAmount(sum, config.locale, config.currency)} y el movimiento es ${formatAmount(totalCents, config.locale, config.currency)} (${word} ${formatAmount(Math.abs(diff), config.locale, config.currency)}). Ajusta las partes o usa adjust_last=true`,
+        m.partsDoNotSum(
+          formatAmount(sum, config.locale, config.currency),
+          formatAmount(totalCents, config.locale, config.currency),
+          diff > 0,
+          formatAmount(Math.abs(diff), config.locale, config.currency),
+        ),
       );
     }
 
@@ -62,7 +67,7 @@ export const tool: ToolDef = {
     // la parte sin categoría en silencio, y el split ya no es reversible sin trabajo.
     const cats = await getCategoryIndex(api);
     for (const p of parts) {
-      if (!cats.has(p.category)) throw new Error(categoryNotFound(msg(config), p.category));
+      if (!cats.has(p.category)) throw new Error(categoryNotFound(m, p.category));
     }
 
     // Crear primero, borrar después: un fallo intermedio deja un duplicado visible, nunca pérdida de datos.
@@ -91,22 +96,18 @@ export const tool: ToolDef = {
       .filter((cid) => cid !== a.transaction_id); // cinturón y tirantes: el original nunca es la copia
     const { id: newId, ambiguous } = newIdFromDiff(before, after);
     if (!newId) {
-      throw new Error(`Split creado pero no localizado; el original ${a.transaction_id} NO se ha borrado — revisa duplicados en Actual`);
+      throw new Error(m.splitCreatedNotFound(a.transaction_id));
     }
     try {
       await api.deleteTransaction(a.transaction_id);
     } catch (err) {
-      throw new Error(
-        `Split creado como ${newId} pero no se pudo borrar el original ${a.transaction_id} (${(err as Error).message}); hay un duplicado visible en Actual — borra el original a mano. Ojo: la copia hereda el mismo id de importación (imported_id) que el original, así que mientras convivan las dos filas comparten la clave de deduplicación del banco y la próxima sincronización bancaria puede confundirse. Si el original estaba conciliado, tendrás que desbloquear la conciliación antes de poder borrarlo`,
-      );
+      throw new Error(m.splitCreatedNotDeleted(newId, a.transaction_id, (err as Error).message));
     }
     const fresh = await getTransactionById(api, newId);
     return {
       split: true,
       original_id: a.transaction_id,
-      ...(ambiguous
-        ? { note: 'Aparecieron varias filas nuevas con la misma cuenta, fecha e importe; se devuelve la primera. Revisa posibles duplicados en Actual' }
-        : {}),
+      ...(ambiguous ? { note: m.ambiguousNewRow } : {}),
       transaction: mapTxEcho(fresh ?? { ...copy, id: newId, account: orig.account }, config.locale, config.currency),
     };
   },

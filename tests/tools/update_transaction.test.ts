@@ -125,4 +125,12 @@ describe('update_transaction', () => {
     expect(tool.readOnly).toBe(false);
     expect(tool.name).toBe('update_transaction');
   });
+
+  it('responde en inglés cuando se configura así', async () => {
+    const api = mockApi({ runQuery: async () => ({ data: [] }) });
+    await expect(tool.handler(
+      { transaction_id: T_MISSING, notes: 'x' },
+      { api, config: { ...testConfig, messagesLang: 'en' } },
+    )).rejects.toThrow(/not found/i);
+  });
 });

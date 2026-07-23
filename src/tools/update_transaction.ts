@@ -26,6 +26,7 @@ export const tool: ToolDef = {
   annotations: { destructiveHint: true, idempotentHint: true },
   inputSchema: input,
   handler: async (raw, { api, config }) => {
+    const m = msg(config);
     const a = schema.parse(raw ?? {});
     const fields: any = {};
     if (a.category_id !== undefined) fields.category = a.category_id;
@@ -35,22 +36,18 @@ export const tool: ToolDef = {
     if (a.cleared !== undefined) fields.cleared = a.cleared;
     if (a.category_id === undefined && a.payee_name === undefined && a.notes === undefined
       && a.date === undefined && a.amount === undefined && a.cleared === undefined) {
-      throw new Error('Debes indicar al menos un campo a actualizar (category_id, payee_name, notes, date, amount, cleared)');
+      throw new Error(m.noFieldToUpdate);
     }
     const existing = await getTransactionById(api, a.transaction_id);
-    if (!existing) throw new Error(`Transacción no encontrada: ${a.transaction_id}`);
+    if (!existing) throw new Error(m.txNotFound(a.transaction_id));
     // La pre-lectura agrupada devuelve la fila PADRE cuando se le pasa el id de una parte:
     // existing.id !== a.transaction_id es el detector de hijo de split.
     if (existing.id !== a.transaction_id) {
-      throw new Error(
-        `La transacción ${a.transaction_id} es una parte de un split (padre ${existing.id}); edita el split completo con split_transaction o desde Actual`,
-      );
+      throw new Error(m.splitChild(a.transaction_id, existing.id));
     }
     if (existing.is_parent || (Array.isArray(existing.subtransactions) && existing.subtransactions.length > 0)) {
       if (a.amount !== undefined || a.category_id !== undefined) {
-        throw new Error(
-          `La transacción ${a.transaction_id} es el padre de un split: importe y categoría viven en las partes; usa split_transaction para redividirla (notas, fecha, cleared y pagador sí se pueden editar aquí)`,
-        );
+        throw new Error(m.splitParentAmount(a.transaction_id));
       }
     }
     // Actual acepta cualquier id de categoría con forma de UUID y deja el movimiento
@@ -58,7 +55,7 @@ export const tool: ToolDef = {
     // índice si realmente viene category_id.
     if (a.category_id !== undefined) {
       const cats = await getCategoryIndex(api);
-      if (!cats.has(a.category_id)) throw new Error(categoryNotFound(msg(config), a.category_id));
+      if (!cats.has(a.category_id)) throw new Error(categoryNotFound(m, a.category_id));
     }
     // payee_name se resuelve a un id: el campo crudo payee_name lo rechaza conform().
     if (a.payee_name !== undefined) {
@@ -73,7 +70,7 @@ export const tool: ToolDef = {
       updated: true,
       // El eco es lo LEÍDO. Si la escritura aún no se refleja se avisa en vez de
       // devolver los valores pedidos como si estuvieran guardados.
-      ...(settled ? {} : { echo_pending: true, note: 'La escritura se envió pero aún no se refleja al releer; vuelve a consultar la transacción para confirmarla' }),
+      ...(settled ? {} : { echo_pending: true, note: m.echoPending }),
       transaction: mapTxEcho(row ?? existing, config.locale, config.currency),
     };
   },
