@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getCategoryIndex, categoryNotFound } from '../core/categories.js';
 import { toCents } from '../core/money.js';
-import { getTransactionById, mapTxEcho } from '../core/tx-read.js';
+import { getTransactionById, mapTxEcho, readBack } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
 
 const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
@@ -67,7 +67,13 @@ export const tool: ToolDef = {
       fields.payee = found ? found.id : await api.createPayee({ name: a.payee_name!.trim() });
     }
     await api.updateTransaction(a.transaction_id, fields);
-    const updated = await getTransactionById(api, a.transaction_id);
-    return { updated: true, transaction: mapTxEcho(updated ?? existing, config.locale, config.currency) };
+    const { row, settled } = await readBack(api, a.transaction_id, fields);
+    return {
+      updated: true,
+      // El eco es lo LEÍDO. Si la escritura aún no se refleja se avisa en vez de
+      // devolver los valores pedidos como si estuvieran guardados.
+      ...(settled ? {} : { echo_pending: true, note: 'La escritura se envió pero aún no se refleja al releer; vuelve a consultar la transacción para confirmarla' }),
+      transaction: mapTxEcho(row ?? existing, config.locale, config.currency),
+    };
   },
 };

@@ -32,6 +32,40 @@ export function newIdFromDiff(before: Set<string>, after: string[]): { id?: stri
   return { id: added[0], ambiguous: added.length > 1 };
 }
 
+/** ¿La fila leída ya lleva aplicados los campos que se escribieron? */
+export function reflectsFields(row: any, fields: Record<string, any>): boolean {
+  if (!row) return false;
+  return Object.entries(fields).every(([key, value]) =>
+    // Actual guarda cleared como 1/0 y las tools escriben true/false.
+    key === 'cleared' ? !!row.cleared === !!value : row[key] === value,
+  );
+}
+
+/**
+ * Re-lectura post-escritura tolerante a la carrera de la API. `api/transaction-update`
+ * de Actual acaba en `return handlers['transactions-batch-update'](diff)['updated']`
+ * SIN await: indexar una promesa da undefined, así que updateTransaction() resuelve
+ * antes de que la escritura aterrice y una única lectura devuelve la fila anterior.
+ * Se sondea hasta verla aplicada; si no llega, se devuelve lo último leído con
+ * settled=false — nunca lo que se pidió escribir, que sería inventarse el resultado.
+ */
+export async function readBack(
+  api: any,
+  id: string,
+  fields: Record<string, any>,
+  opts: { attempts?: number; delayMs?: number; sleep?: (ms: number) => Promise<void> } = {},
+): Promise<{ row: any | null; settled: boolean }> {
+  const attempts = opts.attempts ?? 5;
+  const delayMs = opts.delayMs ?? 20;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  let row = await getTransactionById(api, id);
+  for (let i = 1; i < attempts && !reflectsFields(row, fields); i++) {
+    await sleep(delayMs);
+    row = await getTransactionById(api, id);
+  }
+  return { row, settled: reflectsFields(row, fields) };
+}
+
 /** Echo compacto post-escritura: ids incluidos (el LLM acaba de usarlos). */
 export function mapTxEcho(raw: any, locale: string, currency: string) {
   const echo: any = {

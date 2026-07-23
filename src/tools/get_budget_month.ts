@@ -33,7 +33,10 @@ export const tool: ToolDef = {
     return {
       month: m.month,
       to_budget: fmt(m.toBudget), income: fmt(m.totalIncome),
-      budgeted: fmt(m.totalBudgeted), spent: fmt(m.totalSpent),
+      // loot-core calcula total-budgeted como `-sumAmounts(...)`: llega con el signo
+      // contrario al de las categorías de este mismo payload. Se normaliza aquí para no
+      // dejar que el LLM adivine cuál de los dos criterios vale. El `|| 0` evita el -0.
+      budgeted: fmt(-(m.totalBudgeted ?? 0) || 0), spent: fmt(m.totalSpent),
       categories,
     };
   },

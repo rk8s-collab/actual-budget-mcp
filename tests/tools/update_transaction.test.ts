@@ -97,6 +97,30 @@ describe('update_transaction', () => {
     await tool.handler({ transaction_id: T1, notes: 'x' }, { api, config: testConfig });
     expect(api.getCategoryGroups).not.toHaveBeenCalled();
   });
+  it('echoes the applied state even though the API resolves before writing', async () => {
+    // Reproduce el fallo visto contra el servidor real: se pidió cambiar las notas,
+    // respondió updated:true con las notas VIEJAS y en la base estaban las nuevas.
+    const stale = { id: T1, date: '2026-07-01', account: 'a1', amount: -4550, notes: 'vieja' };
+    // Lectura 1 = pre-lectura; lectura 2 = re-lectura inmediata, que AÚN no ve la
+    // escritura (ahí es donde se rompía); lectura 3 = ya aplicada.
+    let reads = 0;
+    const api = mockApi({
+      runQuery: async () => ({ data: [reads++ < 2 ? stale : { ...stale, notes: 'nueva' }] }),
+    });
+    const r: any = await tool.handler({ transaction_id: T1, notes: 'nueva' }, { api, config: testConfig });
+    expect(r.transaction.notes).toBe('nueva');
+    expect(r).not.toHaveProperty('echo_pending');
+  });
+
+  it('flags the echo instead of lying when the write never shows up', async () => {
+    const stale = { id: T1, date: '2026-07-01', account: 'a1', amount: -4550, notes: 'vieja' };
+    const api = mockApi({ runQuery: async () => ({ data: [stale] }) });
+    const r: any = await tool.handler({ transaction_id: T1, notes: 'nueva' }, { api, config: testConfig });
+    expect(r.updated).toBe(true);
+    expect(r.echo_pending).toBe(true);
+    expect(r.transaction.notes).toBe('vieja'); // lo leído, no lo deseado
+  });
+
   it('is write-gated', () => {
     expect(tool.readOnly).toBe(false);
     expect(tool.name).toBe('update_transaction');
