@@ -4,6 +4,7 @@ import 'dotenv/config';
 import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
 import * as api from '@actual-app/api';
 import { loadConfig } from './core/config.js';
+import { setMessageLanguage } from './core/messages.js';
 import { ActualClient } from './core/actual-client.js';
 import { collectTools } from './core/tool-registry.js';
 import { createServer } from './core/server.js';
@@ -11,6 +12,7 @@ import { allTools } from './tools/index.js';
 
 async function main() {
   const config = loadConfig();
+  setMessageLanguage(config.messagesLang);
   const client = new ActualClient(api, config);
   const tools = collectTools(allTools, config.enableWrite);
   const server = createServer({ tools, client, api, config });

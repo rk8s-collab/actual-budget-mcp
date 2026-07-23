@@ -1,8 +1,9 @@
 import { z } from 'zod';
 import { moneyFields, toCents } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
+import { activeMessages } from '../core/messages.js';
 
-const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, { error: () => activeMessages().dateFormat });
 
 const input = {
   start_date: DATE.describe('Start date YYYY-MM-DD'),
