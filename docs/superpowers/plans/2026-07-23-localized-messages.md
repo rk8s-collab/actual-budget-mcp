@@ -631,6 +631,24 @@ git commit -m "Llevar al catálogo los mensajes de las tools de escritura restan
 - Modify: `README.md` (environment variables table, Claude Desktop form list), `README.es.md` (same two places)
 - Test: full suite
 
+- [ ] **Step 0: Close the `.refine()` gap**
+
+Three object-level `.refine()` messages were missed by the Task 3 inventory, which only
+listed `.regex`/`.uuid`. They are schema messages like any other — the SDK evaluates them
+before the handler — so with `MESSAGES_LANG=en` they would still come out in Spanish:
+
+- `src/tools/create_schedule.ts:23` — `'Indica exactamente uno: date (puntual) o recurrence (recurrente)'`
+- `src/tools/transfer_budget.ts:14` — `'Las categorías de origen y destino deben ser distintas'`
+- `src/tools/get_spending_summary.ts:18` — the date-range message
+
+Migrate them with `activeMessages()` (the schema mechanism, **not** `msg(config)`), copying
+the Spanish verbatim and adding the English.
+
+Then extend the static detector in `tests/core/messages.test.ts` to cover `.refine(` as
+well as `.regex(`/`.uuid(`. Verify it bites: break each of the three deliberately, confirm
+RED, restore with `git checkout --`. Without this the same class of message can be added
+again tomorrow and nothing will notice.
+
 - [ ] **Step 1: Translate the stray parameter description**
 
 `src/tools/categorize_transactions.ts:10` describes its parameter in Spanish while every
