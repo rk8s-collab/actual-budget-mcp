@@ -20,7 +20,7 @@ const schema = z.object(input).refine(
     const days = (Date.parse(v.end_date) - Date.parse(v.start_date)) / 86_400_000;
     return days <= MAX_RANGE_DAYS;
   },
-  { message: 'El rango de fechas no puede superar los 5 años; acorta start_date/end_date.' },
+  { error: () => activeMessages().spendingRangeTooLong },
 );
 
 export const tool: ToolDef = {

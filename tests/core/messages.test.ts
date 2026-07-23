@@ -80,7 +80,7 @@ describe('mensajes de esquema', () => {
     const r = ID.safeParse('no-es-uuid');
     expect(r.error!.issues[0].message).toBe(messagesFor('en').mustBeUuid);
   });
-  it('ningún .regex()/.uuid() de src/tools o src/core/types.ts deja el mensaje como cadena fija (incluye los anidados)', () => {
+  it('ningún .regex()/.uuid()/.refine() de src/tools o src/core/types.ts deja el mensaje como cadena fija (incluye los anidados)', () => {
     // Enfoque ESTÁTICO en vez de parsear valores: el dinámico (parsear un string
     // contra cada campo de PRIMER NIVEL de inputSchema) no alcanza los mensajes
     // que viven dentro de un esquema anidado — p.ej. `MONTH` dentro de
@@ -108,10 +108,10 @@ describe('mensajes de esquema', () => {
 });
 
 /**
- * Recorre el código fuente buscando llamadas `.regex(...)` / `.uuid(...)` y
- * comprueba que, si llevan mensaje, esté envuelto en una función diferida que
- * lea de verdad el catálogo (`activeMessages()`) en vez de ser una cadena fija
- * (española o no) colada dentro de `{ error: () => '...' }`.
+ * Recorre el código fuente buscando llamadas `.regex(...)` / `.uuid(...)` /
+ * `.refine(...)` y comprueba que, si llevan mensaje, esté envuelto en una
+ * función diferida que lea de verdad el catálogo (`activeMessages()`) en vez
+ * de ser una cadena fija (española o no) colada dentro de `{ error: () => '...' }`.
  *
  * No basta con comprobar la FORMA `error: () => ...`: eso lo cumple también
  * `error: () => 'Fecha en formato YYYY-MM-DD'`, que es justo el error que
@@ -125,20 +125,25 @@ describe('mensajes de esquema', () => {
  * dividir los argumentos de nivel superior por comas — no por "lo que sobra
  * después del literal regex". Si ese argumento es un identificador, se busca
  * su definición (`const NOMBRE = {...}`) en el mismo fichero y se juzga igual.
+ *
+ * `.refine(predicado, opciones?)` sigue la misma forma posicional que
+ * `.regex(patron, mensaje?)`: el primer argumento se ignora (es el predicado,
+ * no un mensaje) y el segundo es el que puede llevar `message`/`error`.
  */
 function localizarMensajesSinTraducir(codigo: string): string[] {
   const problemas: string[] = [];
-  const patronLlamada = /\.(regex|uuid)\(/g;
+  const patronLlamada = /\.(regex|uuid|refine)\(/g;
   let coincidencia: RegExpExecArray | null;
   while ((coincidencia = patronLlamada.exec(codigo))) {
-    const metodo = coincidencia[1] as 'regex' | 'uuid';
+    const metodo = coincidencia[1] as 'regex' | 'uuid' | 'refine';
     const inicioArgumentos = coincidencia.index + coincidencia[0].length;
     const argumentos = extraerArgumentosBalanceados(codigo, inicioArgumentos);
     const partes = dividirArgumentosSuperior(argumentos);
 
-    // .regex(patron, mensaje?): el primer argumento es el patrón, se ignora.
+    // .regex(patron, mensaje?) / .refine(predicado, opciones?): el primer
+    // argumento no es un mensaje (patrón o predicado), se ignora.
     // .uuid(mensaje?): el único argumento, si existe, es el mensaje/opciones.
-    const argumentoMensaje = metodo === 'regex' ? partes[1] : partes[0];
+    const argumentoMensaje = metodo === 'uuid' ? partes[0] : partes[1];
     if (argumentoMensaje === undefined) continue; // sin segundo argumento: no hay mensaje que comprobar
 
     const problema = comprobarArgumentoMensaje(argumentoMensaje, codigo);

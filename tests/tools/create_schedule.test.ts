@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { tool } from '../../src/tools/create_schedule.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
+import { setMessageLanguage } from '../../src/core/messages.js';
+
+// El idioma activo es estado de módulo: restaurarlo o se contamina el resto del fichero.
+afterEach(() => setMessageLanguage('es'));
 
 // Los ids de entrada se validan como UUID (ID en src/core/types.ts).
 const A1 = 'aaaaaaaa-1111-4111-8111-111111111111';
@@ -44,5 +48,13 @@ describe('create_schedule', () => {
       { name: 'X', payee_name: 'NoExiste', account_id: A1, amount: -1, date: '2026-09-15' },
       { api, config: testConfig },
     )).rejects.toThrow(/NoExiste/);
+  });
+  it('reporta en inglés el mensaje de date/recurrence tras cambiar el idioma (Tarea 7)', async () => {
+    setMessageLanguage('en');
+    const api = mockApi({ getPayees: async () => payees });
+    await expect(tool.handler(
+      { name: 'X', payee_name: 'Netflix', account_id: A1, amount: -1 },
+      { api, config: testConfig },
+    )).rejects.toThrow('Specify exactly one: date (one-off) or recurrence (recurring)');
   });
 });

@@ -1,6 +1,10 @@
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, afterEach } from 'vitest';
 import { tool } from '../../src/tools/get_spending_summary.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
+import { setMessageLanguage } from '../../src/core/messages.js';
+
+// El idioma activo es estado de módulo: restaurarlo o se contamina el resto del fichero.
+afterEach(() => setMessageLanguage('es'));
 
 const rows = [
   { 'category.name': 'Alimentacion', 'category.group.is_income': false, 'payee.name': 'Mercadona', date: '2026-06-03', amount: -112340, transfer_id: null },
@@ -32,5 +36,13 @@ describe('get_spending_summary', () => {
     );
     expect(r.rows).toHaveLength(1);
     expect(r.others).toMatchObject({ amount: 84.20, transaction_count: 1 });
+  });
+  it('reporta en inglés el mensaje de rango excesivo tras cambiar el idioma (Tarea 7)', async () => {
+    setMessageLanguage('en');
+    const api = mockApi({ runQuery: async () => ({ data: rows }) });
+    await expect(tool.handler(
+      { start_date: '2020-01-01', end_date: '2027-01-01' },
+      { api, config: testConfig },
+    )).rejects.toThrow('The date range cannot exceed 5 years; shorten start_date/end_date.');
   });
 });

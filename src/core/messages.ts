@@ -52,6 +52,9 @@ const es = {
     `Una nota vacía borra la nota existente de "${name}". Pasa clear: true para confirmar.`,
   payeeNotFound: (name: string, options: string[]) =>
     `Pagador no encontrado: "${name}"${options.length ? ` — ¿quizá: ${options.join(', ')}?` : ''}`,
+  scheduleDateXorRecurrence: 'Indica exactamente uno: date (puntual) o recurrence (recurrente)',
+  transferCategoriesMustDiffer: 'Las categorías de origen y destino deben ser distintas',
+  spendingRangeTooLong: 'El rango de fechas no puede superar los 5 años; acorta start_date/end_date.',
 };
 
 export type Messages = typeof es;
@@ -103,6 +106,9 @@ const en: Messages = {
     `An empty note erases the existing note of "${name}". Pass clear: true to confirm.`,
   payeeNotFound: (name: string, options: string[]) =>
     `Payee not found: "${name}"${options.length ? ` — maybe: ${options.join(', ')}?` : ''}`,
+  scheduleDateXorRecurrence: 'Specify exactly one: date (one-off) or recurrence (recurring)',
+  transferCategoriesMustDiffer: 'Source and destination categories must be different',
+  spendingRangeTooLong: 'The date range cannot exceed 5 years; shorten start_date/end_date.',
 };
 
 const CATALOGUES: Record<'es' | 'en', Messages> = { es, en };

@@ -1,6 +1,10 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, afterEach } from 'vitest';
 import { tool } from '../../src/tools/transfer_budget.js';
 import { mockApi, testConfig } from '../helpers/mock-api.js';
+import { setMessageLanguage } from '../../src/core/messages.js';
+
+// El idioma activo es estado de módulo: restaurarlo o se contamina el resto del fichero.
+afterEach(() => setMessageLanguage('es'));
 
 // Los ids de entrada se validan como UUID (ID en src/core/types.ts).
 const C1 = '11111111-1111-4111-8111-111111111111';
@@ -38,6 +42,14 @@ describe('transfer_budget', () => {
       { month: '2026-08', from_category_id: CX, to_category_id: C2, amount: 10 },
       { api, config: testConfig },
     )).rejects.toThrow(CX);
+  });
+  it('reporta en inglés el mensaje de categorías distintas tras cambiar el idioma (Tarea 7)', async () => {
+    setMessageLanguage('en');
+    const api = mockApi({ getBudgetMonth: async () => month });
+    await expect(tool.handler(
+      { month: '2026-08', from_category_id: C1, to_category_id: C1, amount: 10 },
+      { api, config: testConfig },
+    )).rejects.toThrow('Source and destination categories must be different');
   });
   it('compensates the source when the second leg fails', async () => {
     const api = mockApi({ getBudgetMonth: async () => month });

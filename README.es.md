@@ -26,6 +26,7 @@ Actual Budget self-hosted al que puedas acceder. En Macs Intel, Windows o Linux,
    - **Budget Sync ID** — el del paso 2
    - **Locale** y **Currency** — p. ej. `es-ES` y `EUR`; los valores por defecto son `en-US` y `USD`
    - **Enable write tools** — déjalo **desactivado** por ahora (ver más abajo)
+   - **Message language** — `es` o `en`; por defecto `es`
 5. **Comprueba que funciona** — empieza una conversación nueva y pregunta *"¿qué cuentas tengo?"*.
    Deberías obtener tu lista de cuentas con sus saldos.
 
@@ -128,6 +129,7 @@ Las tres primeras son obligatorias; el resto tienen valores por defecto.
 | `CURRENCY` | No | `USD` | Código ISO de moneda de 3 letras (ej. `EUR`) |
 | `SYNC_TTL_SECONDS` | No | `60` | Segundos que se cachea el sync antes de volver a sincronizar |
 | `ENABLE_WRITE` | No | `false` | Habilita las 8 tools de escritura (categorizar, splits, schedules, presupuesto, notas) |
+| `MESSAGES_LANG` | No | `es` | Idioma de los mensajes de error del servidor: `es` o `en` |
 
 ## Herramientas disponibles
 

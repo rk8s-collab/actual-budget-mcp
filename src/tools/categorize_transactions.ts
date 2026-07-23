@@ -8,7 +8,7 @@ const input = {
   updates: z.array(z.object({
     transaction_id: ID,
     category_id: ID,
-  })).min(1).max(50).describe('Máx. 50 por llamada; cada item se aplica de forma independiente'),
+  })).min(1).max(50).describe('Max 50 per call; each item applies independently'),
 };
 const schema = z.object(input);
 

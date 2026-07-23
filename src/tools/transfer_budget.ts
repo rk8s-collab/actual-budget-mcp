@@ -12,7 +12,7 @@ const input = {
   amount: z.number().positive().describe('Units to move'),
 };
 const schema = z.object(input).refine((v) => v.from_category_id !== v.to_category_id, {
-  message: 'Las categorías de origen y destino deben ser distintas',
+  error: () => activeMessages().transferCategoriesMustDiffer,
 });
 
 export const tool: ToolDef = {

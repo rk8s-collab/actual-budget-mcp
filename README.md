@@ -35,6 +35,7 @@ Actual Budget server you can reach. On Intel Macs, Windows or Linux, use
    - **Budget Sync ID** — from step 2
    - **Locale** and **Currency** — e.g. `es-ES` and `EUR`; defaults are `en-US` and `USD`
    - **Enable write tools** — leave this **off** for now (see below)
+   - **Message language** — `es` or `en`; defaults to `es`
 5. **Check it works** — start a new conversation and ask *"what accounts do I have?"*.
    You should get your account list with balances.
 
@@ -129,6 +130,7 @@ The first three variables are required; the rest have defaults.
 | `CURRENCY` | No | `USD` | 3-letter ISO currency code (e.g. `EUR`) |
 | `SYNC_TTL_SECONDS` | No | `60` | Seconds the sync is cached before re-syncing |
 | `ENABLE_WRITE` | No | `false` | Enables the 8 write tools (categorize, splits, schedules, budget, notes) |
+| `MESSAGES_LANG` | No | `es` | Language of the server's error messages: `es` or `en` |
 
 ## Tools
 

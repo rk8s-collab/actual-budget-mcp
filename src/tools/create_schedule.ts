@@ -21,7 +21,7 @@ const input = {
   auto_post: z.boolean().default(false).describe('Post the transaction automatically when due'),
 };
 const schema = z.object(input).refine((v) => !!v.date !== !!v.recurrence, {
-  message: 'Indica exactamente uno: date (puntual) o recurrence (recurrente)',
+  error: () => activeMessages().scheduleDateXorRecurrence,
 });
 
 export const tool: ToolDef = {
