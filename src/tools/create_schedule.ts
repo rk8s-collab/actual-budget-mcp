@@ -1,9 +1,8 @@
 import { z } from 'zod';
 import { toCents, moneyFields } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
-import { key } from '../core/messages.js';
 
-const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, key('dateFormat'));
+const DATE = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Fecha en formato YYYY-MM-DD');
 
 const input = {
   name: z.string().min(1).max(200).describe('Unique display name'),

@@ -1,9 +1,8 @@
 import { z } from 'zod';
 import { toCents, moneyFields } from '../core/money.js';
 import { ID, type ToolDef } from '../core/types.js';
-import { key } from '../core/messages.js';
 
-const MONTH = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, key('monthFormat'));
+const MONTH = z.string().regex(/^\d{4}-(0[1-9]|1[0-2])$/, 'Mes en formato YYYY-MM');
 
 const input = {
   month: MONTH,

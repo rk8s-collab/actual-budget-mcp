@@ -1,6 +1,6 @@
 import { describe, it, expect } from 'vitest';
 import { buildToolResult, invalidInputResult } from '../../src/core/server.js';
-import { key, messagesFor } from '../../src/core/messages.js';
+import { messagesFor } from '../../src/core/messages.js';
 
 describe('buildToolResult', () => {
   it('wraps payload as text + structuredContent', () => {
@@ -46,9 +46,5 @@ describe('invalidInputResult', () => {
     const r: any = invalidInputResult(issuesConSimbolo, messagesFor('es'));
     expect(() => JSON.parse(r.content[0].text)).not.toThrow();
     expect(JSON.parse(r.content[0].text).error.hint).toBe('Symbol(campo).anidado: algo falló');
-  });
-  it('resuelve la clave del esquema al idioma del catálogo', () => {
-    const r: any = invalidInputResult([{ path: ['date'], message: key('dateFormat') }], messagesFor('en'));
-    expect(JSON.parse(r.content[0].text).error.hint).toContain('Date in YYYY-MM-DD format');
   });
 });

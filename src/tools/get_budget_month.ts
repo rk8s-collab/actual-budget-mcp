@@ -1,10 +1,9 @@
 import { z } from 'zod';
 import { moneyFields } from '../core/money.js';
 import type { ToolDef } from '../core/types.js';
-import { key } from '../core/messages.js';
 
 const input = {
-  month: z.string().regex(/^\d{4}-\d{2}$/, key('monthFormat')),
+  month: z.string().regex(/^\d{4}-\d{2}$/, 'Mes en formato YYYY-MM'),
   only_active: z.boolean().default(true).describe('Only categories with budgeted, spent or balance != 0'),
 };
 const schema = z.object(input);
