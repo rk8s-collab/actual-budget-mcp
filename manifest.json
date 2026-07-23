@@ -2,7 +2,7 @@
   "manifest_version": "0.4",
   "name": "actual-budget-mcp-es",
   "display_name": "Actual Budget",
-  "version": "2.0.0-dev",
+  "version": "2.0.0",
   "description": "Talk to your self-hosted Actual Budget: spending analysis, budget tracking, net worth and assisted writes.",
   "long_description": "An MCP server built for LLM consumption: transfers never pollute spending summaries, net worth includes off-budget accounts, amounts are converted server-side, and split transactions use real subtransactions. Write tools are opt-in and there are no delete tools. Requires a Mac with Apple Silicon.",
   "author": { "name": "Marco Antonio Pérez", "url": "https://github.com/marcoaperez" },
