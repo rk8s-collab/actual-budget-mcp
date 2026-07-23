@@ -70,3 +70,16 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
   Pendiente para el mantenedor: verificación manual en Claude Desktop con el servidor real
   (instalar el `.mcpb`, comprobar 8/16 tools según `ENABLE_WRITE`, y que la entrada manual
   `actual-budget` preexistente sigue funcionando tras desinstalar la extensión).
+- **La extensión NO corre bajo Node (2026-07-23)**: Claude Desktop arranca el servidor de una
+  extensión como UtilityProcess de su propio Electron (42.7.0 → `NODE_MODULE_VERSION` 146),
+  no con el Node del sistema. El primer bundle viajó con `better_sqlite3.node` compilado para
+  el Node que empaqueta (ABI 147): la extensión instalaba bien y moría al primer uso con
+  `ERR_DLOPEN_FAILED`. `scripts/bundle.ts` detecta ahora la versión de Electron del Claude
+  Desktop instalado (o `ELECTRON_TARGET=x.y.z`), reinstala el prebuild para ese runtime y
+  verifica el binario que viaja. Ojo al distribuir: el bundle queda atado al ABI de Electron
+  de Claude, así que una actualización mayor de Claude Desktop obliga a reempaquetar.
+- **Un sync fallido puede significar presupuesto cerrado (2026-07-23)**: cuando loot-core no
+  logra abrir la base local cierra el presupuesto, `downloadBudget()` resuelve igual (la API
+  ignora el resultado de `load-budget`) y el `sync()` posterior revienta al leer las prefs.
+  `ensureReady()` sondea con `getBudgetMonths()` antes de servir `stale`, reabre una vez y,
+  si sigue cerrado, lanza un error legible en vez del incomprensible "No budget file is open".
