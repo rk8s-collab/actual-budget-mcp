@@ -78,36 +78,181 @@ describe('mensajes de esquema', () => {
 
 /**
  * Recorre el código fuente buscando llamadas `.regex(...)` / `.uuid(...)` y
- * comprueba que, si llevan mensaje, esté envuelto en la función diferida
- * `{ error: () => ... }` en vez de ser una cadena fija (española o no).
+ * comprueba que, si llevan mensaje, esté envuelto en una función diferida que
+ * lea de verdad el catálogo (`activeMessages()`) en vez de ser una cadena fija
+ * (española o no) colada dentro de `{ error: () => '...' }`.
+ *
+ * No basta con comprobar la FORMA `error: () => ...`: eso lo cumple también
+ * `error: () => 'Fecha en formato YYYY-MM-DD'`, que es justo el error que
+ * comete quien copia el patrón de al lado y mete el texto dentro. Por eso el
+ * cuerpo de la función diferida se comprueba con `comprobarClaveError`, que
+ * exige que invoque `activeMessages()`.
+ *
+ * Para no disparar falsos positivos con escrituras legítimas (patrón
+ * extraído a una constante, `new RegExp(...)`, parámetros compartidos en un
+ * objeto aparte), el argumento de mensaje se localiza por POSICIÓN tras
+ * dividir los argumentos de nivel superior por comas — no por "lo que sobra
+ * después del literal regex". Si ese argumento es un identificador, se busca
+ * su definición (`const NOMBRE = {...}`) en el mismo fichero y se juzga igual.
  */
 function localizarMensajesSinTraducir(codigo: string): string[] {
   const problemas: string[] = [];
   const patronLlamada = /\.(regex|uuid)\(/g;
   let coincidencia: RegExpExecArray | null;
   while ((coincidencia = patronLlamada.exec(codigo))) {
-    const metodo = coincidencia[1];
+    const metodo = coincidencia[1] as 'regex' | 'uuid';
     const inicioArgumentos = coincidencia.index + coincidencia[0].length;
     const argumentos = extraerArgumentosBalanceados(codigo, inicioArgumentos);
-    const llevaClaveError = /error\s*:/.test(argumentos);
+    const partes = dividirArgumentosSuperior(argumentos);
 
-    if (llevaClaveError) {
-      // Lleva la clave, pero ¿su valor es de verdad una función diferida?
-      if (!/error\s*:\s*\(\s*\)\s*=>/.test(argumentos)) {
-        problemas.push(`${metodo}(${resumir(argumentos)}) — "error:" no es una función diferida`);
-      }
-      continue;
-    }
+    // .regex(patron, mensaje?): el primer argumento es el patrón, se ignora.
+    // .uuid(mensaje?): el único argumento, si existe, es el mensaje/opciones.
+    const argumentoMensaje = metodo === 'regex' ? partes[1] : partes[0];
+    if (argumentoMensaje === undefined) continue; // sin segundo argumento: no hay mensaje que comprobar
 
-    // Sin clave "error:": para .regex() descartamos el literal de expresión
-    // regular (primer argumento) y miramos si queda algo más (un segundo
-    // argumento, aunque sea una cadena fija sin envolver).
-    const resto = metodo === 'regex' ? quitarLiteralRegexInicial(argumentos) : argumentos.trim();
-    if (resto.length > 0) {
-      problemas.push(`${metodo}(${resumir(argumentos)}) — mensaje como cadena fija, sin función diferida`);
+    const problema = comprobarArgumentoMensaje(argumentoMensaje, codigo);
+    if (problema) {
+      problemas.push(`${metodo}(${resumir(argumentos)}) — ${problema}`);
     }
   }
   return problemas;
+}
+
+/**
+ * Juzga el argumento de mensaje/opciones de una llamada `.regex()`/`.uuid()`.
+ * Devuelve `null` si está bien (sin mensaje, o mensaje diferido que lee el
+ * catálogo) o una descripción del problema si no.
+ */
+function comprobarArgumentoMensaje(argumento: string, codigoCompleto: string): string | null {
+  const t = argumento.trim();
+  if (t.length === 0) return null; // argumento vacío (p.ej. una coma colgante): nada que comprobar
+
+  if (/^['"`]/.test(t)) {
+    // Cadena fija directa como segundo argumento: `.regex(re, 'mensaje')`.
+    return 'mensaje como cadena fija, sin función diferida';
+  }
+
+  if (t.startsWith('{')) {
+    // Objeto de opciones inline: o bien no tiene clave "error" (es un mensaje
+    // fijo colado por otra vía, p.ej. `{ message: '...' }`), o la tiene y hay
+    // que comprobar que sea una función diferida que lea el catálogo.
+    if (!/error\s*:/.test(t)) {
+      return 'objeto de opciones sin clave "error" diferida (revisar si esconde un mensaje fijo)';
+    }
+    return comprobarClaveError(t);
+  }
+
+  const esIdentificador = /^[A-Za-z_$][A-Za-z0-9_$]*$/.test(t);
+  if (esIdentificador) {
+    // Identificador (p.ej. params compartidos en una constante aparte):
+    // buscamos su definición en el mismo fichero para poder juzgarla igual.
+    const definicion = buscarDefinicionConst(codigoCompleto, t);
+    if (definicion === null) {
+      return `identificador "${t}" no analizable estáticamente (revisar a mano que use activeMessages())`;
+    }
+    if (!/error\s*:/.test(definicion)) {
+      return null; // objeto de parámetros sin clave "error": no es un mensaje, nada que reportar
+    }
+    return comprobarClaveError(definicion);
+  }
+
+  // Otra expresión no reconocida (llamada a función, propiedad, etc.): no es
+  // analizable estáticamente con este método; no se marca para no generar
+  // falsos positivos sobre construcciones legítimas que no podemos resolver.
+  return null;
+}
+
+/** Comprueba que un texto con una clave `error:` la resuelva con una función
+ * diferida que invoque `activeMessages()` — cubre tanto `() => ...` como la
+ * firma `(issue) => ...` que documenta Zod 4. */
+function comprobarClaveError(texto: string): string | null {
+  if (/error\s*:\s*\([^)]*\)\s*=>[^,}]*activeMessages\(\)/.test(texto)) {
+    return null;
+  }
+  return '"error:" no invoca activeMessages() (¿mensaje fijo o función no diferida?)';
+}
+
+/** Busca `const NOMBRE = {...}` (o `let`) en el código y devuelve el texto del
+ * objeto literal asignado, o `null` si no se encuentra una definición así de
+ * analizable (p.ej. viene de otro fichero, o no es un objeto literal). */
+function buscarDefinicionConst(codigo: string, nombre: string): string | null {
+  const patronDefinicion = new RegExp(`\\b(?:const|let)\\s+${nombre}\\s*(?::[^=]+)?=\\s*`);
+  const coincidencia = patronDefinicion.exec(codigo);
+  if (!coincidencia) return null;
+  let i = coincidencia.index + coincidencia[0].length;
+  while (i < codigo.length && /\s/.test(codigo[i])) i++;
+  if (codigo[i] !== '{') return null;
+  return extraerBloqueBalanceado(codigo, i);
+}
+
+/** Divide en argumentos de nivel superior (separados por comas fuera de
+ * paréntesis/llaves/corchetes/cadenas/regex) el texto ya extraído de una
+ * llamada. Descarta trozos vacíos (espacios entre comas). */
+function dividirArgumentosSuperior(argumentos: string): string[] {
+  const partes: string[] = [];
+  let profundidad = 0;
+  let inicio = 0;
+  let i = 0;
+  while (i < argumentos.length) {
+    const c = argumentos[i];
+    if (c === '(' || c === '{' || c === '[') {
+      profundidad++;
+    } else if (c === ')' || c === '}' || c === ']') {
+      profundidad--;
+    } else if (c === "'" || c === '"' || c === '`') {
+      const comilla = c;
+      i++;
+      while (i < argumentos.length && argumentos[i] !== comilla) {
+        if (argumentos[i] === '\\') i++;
+        i++;
+      }
+    } else if (c === '/') {
+      const previo = i === 0 ? '' : argumentos.slice(0, i).trimEnd().slice(-1);
+      if (i === 0 || previo === '(' || previo === ',') {
+        i++;
+        while (i < argumentos.length && argumentos[i] !== '/') {
+          if (argumentos[i] === '\\') i++;
+          i++;
+        }
+        while (i + 1 < argumentos.length && /[a-z]/i.test(argumentos[i + 1])) i++;
+      }
+    } else if (c === ',' && profundidad === 0) {
+      partes.push(argumentos.slice(inicio, i));
+      inicio = i + 1;
+    }
+    i++;
+  }
+  partes.push(argumentos.slice(inicio));
+  return partes.map((p) => p.trim()).filter((p) => p.length > 0);
+}
+
+/** Extrae un bloque delimitado por `(`/`{`/`[` respetando el anidamiento y
+ * los literales de cadena, empezando EN el propio carácter de apertura
+ * (a diferencia de `extraerArgumentosBalanceados`, que asume ya consumido). */
+function extraerBloqueBalanceado(codigo: string, inicioApertura: number): string {
+  let profundidad = 0;
+  let i = inicioApertura;
+  while (i < codigo.length) {
+    const c = codigo[i];
+    if (c === '(' || c === '{' || c === '[') {
+      profundidad++;
+    } else if (c === ')' || c === '}' || c === ']') {
+      profundidad--;
+      if (profundidad === 0) {
+        i++;
+        break;
+      }
+    } else if (c === "'" || c === '"' || c === '`') {
+      const comilla = c;
+      i++;
+      while (i < codigo.length && codigo[i] !== comilla) {
+        if (codigo[i] === '\\') i++;
+        i++;
+      }
+    }
+    i++;
+  }
+  return codigo.slice(inicioApertura, i);
 }
 
 /** Extrae el texto de los argumentos de una llamada ya abierta (tras el "(" inicial),
@@ -147,23 +292,6 @@ function extraerArgumentosBalanceados(codigo: string, inicio: number): string {
     i++;
   }
   return codigo.slice(inicio, i);
-}
-
-/** Quita el literal de expresión regular inicial (y la coma que le sigue) de los
- * argumentos de un `.regex(...)`, dejando solo lo que venga después (si hay algo). */
-function quitarLiteralRegexInicial(argumentos: string): string {
-  const t = argumentos.trimStart();
-  if (t[0] !== '/') return t; // no debería pasar: .regex() siempre empieza por el patrón
-  let i = 1;
-  while (i < t.length && t[i] !== '/') {
-    if (t[i] === '\\') i++;
-    i++;
-  }
-  i++; // saltar la barra de cierre
-  while (i < t.length && /[a-z]/i.test(t[i])) i++; // flags de la regex
-  let resto = t.slice(i).trimStart();
-  if (resto.startsWith(',')) resto = resto.slice(1).trimStart();
-  return resto.trim();
 }
 
 function resumir(texto: string): string {
