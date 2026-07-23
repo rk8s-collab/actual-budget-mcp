@@ -25,7 +25,9 @@ Actual Budget server you can reach. On Intel Macs, Windows or Linux, use
 2. **Find your Sync ID** — open Actual Budget in the browser, go to **Settings** →
    **Advanced Settings** → **IDs**, and copy the **Sync ID**.
 3. **Install** — in Claude Desktop, open **Settings → Extensions**, drag the downloaded
-   `.mcpb` file onto the page, review what it declares, and select **Install**.
+   `.mcpb` file onto the page, review what it declares, and select **Install**. Claude
+   Desktop will note the extension is not signed — that's expected for a self-distributed
+   bundle.
 4. **Fill the form** Claude Desktop shows:
    - **Actual server URL** — e.g. `https://actual.example.org/`
    - **Server password** — the one you use to open Actual in the browser (stored by Claude
@@ -41,7 +43,8 @@ Actual Budget server you can reach. On Intel Macs, Windows or Linux, use
 With the checkbox off you get the 8 read-only tools. Turn it on (Settings → Extensions →
 this extension → configure) to add the 8 write tools: editing and categorizing transactions,
 real splits, scheduled transactions, budget assignment and category notes. Claude Desktop
-still asks for your approval on every single call, and there are no delete tools.
+asks for your approval before each call unless you grant it standing permission, and there
+are no delete tools.
 
 ### Updating
 
@@ -163,7 +166,8 @@ Three things worth knowing before you enable writes:
 - `split_transaction` **replaces** the transaction, so it gets a new id.
 - Every MCP client you connect starts its own server process. Only one process can open a
   budget at a time, so extra instances automatically use their own local copy
-  (`<data dir>-instance-<pid>`). Set `ACTUAL_DATA_DIR` per client if you prefer to control it.
+  (`<data dir>-instance-<pid>`). In a manual installation you can set `ACTUAL_DATA_DIR` per
+  client if you prefer to control it (the Claude Desktop bundle does not expose this setting).
 
 The full security model — trust boundary, credentials, destructive operations, input validation and how to report a vulnerability — is documented in [SECURITY.md](SECURITY.md).
 

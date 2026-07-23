@@ -8,12 +8,17 @@ import { fileURLToPath } from 'node:url';
 const root = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const build = path.join(root, 'build');
 const stage = path.join(build, 'stage');
+// Binario local en vez de `npx mcpb`: en un clon recién hecho, si `npm run bundle` se
+// lanza antes de `npm install`, `npx` descargaría en silencio otra versión del registro.
+const mcpb = path.join(root, 'node_modules', '.bin', 'mcpb');
 
 function run(cmd: string, args: string[], cwd = root) {
   execFileSync(cmd, args, { cwd, stdio: 'inherit' });
 }
 
-// 1. Compilar
+// 1. Compilar en un dist/ limpio: `tsc` nunca borra lo que ya hay, así que un .js
+// huérfano de un fuente renombrado o eliminado sobreviviría y viajaría en el bundle.
+fs.rmSync(path.join(root, 'dist'), { recursive: true, force: true });
 run('npm', ['run', 'build']);
 
 // 2. Escenario limpio
@@ -22,7 +27,14 @@ fs.mkdirSync(stage, { recursive: true });
 
 // 3. Copiar lo que va dentro del bundle (y nada más)
 fs.cpSync(path.join(root, 'dist'), path.join(stage, 'dist'), { recursive: true });
-for (const file of ['manifest.json', 'package-lock.json', 'icon.png', 'README.md', 'LICENSE']) {
+for (const file of [
+  'manifest.json',
+  'package-lock.json',
+  'icon.png',
+  'README.md',
+  'README.es.md',
+  'LICENSE',
+]) {
   fs.copyFileSync(path.join(root, file), path.join(stage, file));
 }
 
@@ -40,9 +52,9 @@ run('npm', ['ci', '--omit=dev'], stage);
 fs.rmSync(path.join(stage, 'package-lock.json'), { force: true });
 
 // 5. Validar el manifiesto y empaquetar
-run('npx', ['mcpb', 'validate', path.join(stage, 'manifest.json')]);
+run(mcpb, ['validate', path.join(stage, 'manifest.json')]);
 const out = path.join(build, 'actual-budget-mcp-es.mcpb');
-run('npx', ['mcpb', 'pack', stage, out]);
+run(mcpb, ['pack', stage, out]);
 
 // 6. Informe
 const sizeMb = (fs.statSync(out).size / 1024 / 1024).toFixed(1);

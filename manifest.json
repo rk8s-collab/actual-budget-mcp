@@ -4,11 +4,15 @@
   "display_name": "Actual Budget",
   "version": "2.0.0-dev",
   "description": "Talk to your self-hosted Actual Budget: spending analysis, budget tracking, net worth and assisted writes.",
-  "long_description": "An MCP server built for LLM consumption: transfers never pollute spending summaries, net worth includes off-budget accounts, amounts are converted server-side, and split transactions use real subtransactions. Write tools are opt-in and there are no delete tools.",
+  "long_description": "An MCP server built for LLM consumption: transfers never pollute spending summaries, net worth includes off-budget accounts, amounts are converted server-side, and split transactions use real subtransactions. Write tools are opt-in and there are no delete tools. Requires a Mac with Apple Silicon.",
   "author": { "name": "Marco Antonio Pérez", "url": "https://github.com/marcoaperez" },
   "homepage": "https://github.com/marcoaperez/actual-budget-mcp-es",
   "documentation": "https://github.com/marcoaperez/actual-budget-mcp-es#readme",
   "support": "https://github.com/marcoaperez/actual-budget-mcp-es/issues",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/marcoaperez/actual-budget-mcp-es"
+  },
   "license": "MIT",
   "icon": "icon.png",
   "keywords": ["actual-budget", "finance", "budgeting", "personal-finance"],
@@ -52,20 +56,20 @@
       "type": "string",
       "title": "Locale",
       "description": "Formats amounts, e.g. en-US or es-ES",
-      "required": false,
+      "required": true,
       "default": "en-US"
     },
     "currency": {
       "type": "string",
       "title": "Currency",
       "description": "ISO 4217 code, e.g. USD or EUR",
-      "required": false,
+      "required": true,
       "default": "USD"
     },
     "enable_write": {
       "type": "boolean",
       "title": "Enable write tools",
-      "description": "Off: 8 read-only tools. On: 8 more that can edit transactions, splits, budgets and notes. Your MCP client still asks for approval on every call.",
+      "description": "Off: 8 read-only tools. On: 8 more that can edit transactions, splits, budgets and notes. Your MCP client asks for approval before each call unless you grant it standing permission.",
       "required": false,
       "default": false
     }

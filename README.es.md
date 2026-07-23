@@ -17,7 +17,8 @@ Actual Budget self-hosted al que puedas acceder. En Macs Intel, Windows o Linux,
 2. **Encuentra tu Sync ID** — abre Actual Budget en el navegador, ve a **Settings** →
    **Advanced Settings** → **IDs**, y copia el **Sync ID**.
 3. **Instala** — en Claude Desktop, abre **Settings → Extensions**, arrastra el archivo
-   `.mcpb` descargado a la página, revisa lo que declara y pulsa **Install**.
+   `.mcpb` descargado a la página, revisa lo que declara y pulsa **Install**. Claude Desktop
+   avisará de que la extensión no está firmada — es lo esperado en un bundle autodistribuido.
 4. **Rellena el formulario** que muestra Claude Desktop:
    - **Actual server URL** — p. ej. `https://actual.example.org/`
    - **Server password** — la misma que usas para abrir Actual en el navegador (se guarda
@@ -33,8 +34,8 @@ Actual Budget self-hosted al que puedas acceder. En Macs Intel, Windows o Linux,
 Con la casilla desactivada tienes las 8 tools de solo lectura. Actívala (Settings →
 Extensions → esta extensión → configurar) para añadir las 8 tools de escritura: editar y
 categorizar movimientos, splits reales, repetitivos, asignación de presupuesto y notas de
-categoría. Claude Desktop sigue pidiendo tu aprobación en cada llamada, y no hay tools de
-borrado.
+categoría. Claude Desktop pide tu aprobación antes de cada llamada salvo que le concedas
+permiso permanente, y no hay tools de borrado.
 
 ### Actualizar
 
@@ -173,8 +174,9 @@ Tres cosas que conviene saber antes de activar la escritura:
 - `split_transaction` **reemplaza** la transacción, así que obtiene un id nuevo.
 - Cada cliente MCP que conectes arranca su propio proceso del servidor. Actual solo permite
   que un proceso abra el presupuesto a la vez, así que las instancias extra usan
-  automáticamente su propia copia local (`<data dir>-instance-<pid>`). Si prefieres
-  controlarlo, da a cada cliente su propio `ACTUAL_DATA_DIR`.
+  automáticamente su propia copia local (`<data dir>-instance-<pid>`). En una instalación
+  manual puedes dar a cada cliente su propio `ACTUAL_DATA_DIR` si prefieres controlarlo (el
+  bundle de Claude Desktop no expone esta opción).
 
 El modelo de seguridad completo — frontera de confianza, credenciales, operaciones destructivas, validación de entrada y cómo reportar una vulnerabilidad — está en [SECURITY.md](SECURITY.md) (en inglés).
 
@@ -208,7 +210,7 @@ El `handler(input, ctx)` recibe el contexto `{ api, config }` ya inicializado; u
 
 ### Publicar un bundle
 
-1. Sube `version` en `package.json` **y** en `manifest.json` (un test obliga a que coincidan).
+1. Actualiza la `version` en `package.json` **y** en `manifest.json` (un test obliga a que coincidan).
 2. `npm test && npm run build && npm run bundle`
 3. Verifica el bundle:
    ```bash

@@ -55,6 +55,14 @@ describe('manifest ↔ code consistency', () => {
       const refs = Object.values(env).filter((v) => v === '${user_config.' + key + '}');
       expect(refs, `user_config.${key} no está cableada en mcp_config.env`).toHaveLength(1);
     }
+    // Cada variable de entorno debe apuntar a SU campo del formulario, no solo a alguno
+    // (esto detecta, p.ej., que server_url y password se hayan intercambiado)
+    expect(env.ACTUAL_SERVER_URL).toBe('${user_config.server_url}');
+    expect(env.ACTUAL_SERVER_PASSWORD).toBe('${user_config.password}');
+    expect(env.ACTUAL_SYNC_ID).toBe('${user_config.sync_id}');
+    expect(env.LOCALE).toBe('${user_config.locale}');
+    expect(env.CURRENCY).toBe('${user_config.currency}');
+    expect(env.ENABLE_WRITE).toBe('${user_config.enable_write}');
     // Y cada variable de entorno del manifiesto la entiende loadConfig
     const cfg = loadConfig({
       ACTUAL_SERVER_URL: 'https://actual.example.org/',
@@ -76,6 +84,17 @@ describe('manifest ↔ code consistency', () => {
 
   it('defaults the write toggle to off', () => {
     expect(manifest.user_config.enable_write.default).toBe(false);
+  });
+
+  it('stores the password in the MCP client secure storage, not a plaintext file', () => {
+    expect(manifest.user_config.password.sensitive).toBe(true);
+  });
+
+  it('requires locale and currency so the form can never submit them empty', () => {
+    // z.string().length(3) rechaza CURRENCY="" y no hay rescate posible vía .default():
+    // .default() solo actúa si la clave está ausente, no si llega vacía.
+    expect(manifest.user_config.locale.required).toBe(true);
+    expect(manifest.user_config.currency.required).toBe(true);
   });
 });
 
