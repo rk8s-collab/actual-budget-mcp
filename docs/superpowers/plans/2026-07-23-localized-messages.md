@@ -11,7 +11,8 @@
 ## Global Constraints
 
 - **Spanish is the default.** `MESSAGES_LANG` unset ⇒ `es`. Any existing install must behave exactly as before.
-- **Existing tests must not be edited.** They assert Spanish strings (`/campo/i`, `/split/i`, `/presupuesto.*cerr/i`). If a task needs to change one, the default moved by accident — stop and fix the code instead.
+- **Existing assertions must not be edited.** Tests assert Spanish strings (`/campo/i`, `/split/i`, `/presupuesto.*cerr/i`). If a task needs to change one, the default moved by accident — stop and fix the code instead.
+- **Fixtures may gain the new field.** Two files declare a full `Config` by hand and stop compiling once `messagesLang` is required: `tests/helpers/mock-api.ts:4` (`testConfig`) and `tests/core/actual-client.test.ts:13` (`cfg`). Adding `messagesLang: 'es'` to both is expected and does not weaken anything — it pins the default the surrounding tests already assume. This is the only permitted edit to an existing test file besides appending new tests.
 - **Spanish texts are copied verbatim** from the current source. Do not reword while moving them; a reworded message silently breaks a passing test.
 - **Config-validation messages stay Spanish.** The four in `src/core/config.ts` run while producing the config, so no language is known yet. Do not touch them.
 - **stderr stays Spanish.** The nine `console.error` calls are not localized.
