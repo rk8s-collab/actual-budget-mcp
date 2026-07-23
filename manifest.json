@@ -1,0 +1,78 @@
+{
+  "manifest_version": "0.4",
+  "name": "actual-budget-mcp-es",
+  "display_name": "Actual Budget",
+  "version": "2.0.0-dev",
+  "description": "Talk to your self-hosted Actual Budget: spending analysis, budget tracking, net worth and assisted writes.",
+  "long_description": "An MCP server built for LLM consumption: transfers never pollute spending summaries, net worth includes off-budget accounts, amounts are converted server-side, and split transactions use real subtransactions. Write tools are opt-in and there are no delete tools.",
+  "author": { "name": "Marco Antonio Pérez", "url": "https://github.com/marcoaperez" },
+  "homepage": "https://github.com/marcoaperez/actual-budget-mcp-es",
+  "documentation": "https://github.com/marcoaperez/actual-budget-mcp-es#readme",
+  "support": "https://github.com/marcoaperez/actual-budget-mcp-es/issues",
+  "license": "MIT",
+  "icon": "icon.png",
+  "keywords": ["actual-budget", "finance", "budgeting", "personal-finance"],
+  "server": {
+    "type": "node",
+    "entry_point": "dist/index.js",
+    "mcp_config": {
+      "command": "node",
+      "args": ["${__dirname}/dist/index.js"],
+      "env": {
+        "ACTUAL_SERVER_URL": "${user_config.server_url}",
+        "ACTUAL_SERVER_PASSWORD": "${user_config.password}",
+        "ACTUAL_SYNC_ID": "${user_config.sync_id}",
+        "LOCALE": "${user_config.locale}",
+        "CURRENCY": "${user_config.currency}",
+        "ENABLE_WRITE": "${user_config.enable_write}"
+      }
+    }
+  },
+  "user_config": {
+    "server_url": {
+      "type": "string",
+      "title": "Actual server URL",
+      "description": "URL of your self-hosted Actual Budget server, e.g. https://actual.example.org/",
+      "required": true
+    },
+    "password": {
+      "type": "string",
+      "title": "Server password",
+      "description": "The password you use to open Actual Budget in the browser",
+      "required": true,
+      "sensitive": true
+    },
+    "sync_id": {
+      "type": "string",
+      "title": "Budget Sync ID",
+      "description": "In Actual: Settings → Advanced Settings → Sync ID",
+      "required": true
+    },
+    "locale": {
+      "type": "string",
+      "title": "Locale",
+      "description": "Formats amounts, e.g. en-US or es-ES",
+      "required": false,
+      "default": "en-US"
+    },
+    "currency": {
+      "type": "string",
+      "title": "Currency",
+      "description": "ISO 4217 code, e.g. USD or EUR",
+      "required": false,
+      "default": "USD"
+    },
+    "enable_write": {
+      "type": "boolean",
+      "title": "Enable write tools",
+      "description": "Off: 8 read-only tools. On: 8 more that can edit transactions, splits, budgets and notes. Your MCP client still asks for approval on every call.",
+      "required": false,
+      "default": false
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin"],
+    "runtimes": { "node": ">=22" }
+  },
+  "tools": []
+}
