@@ -1,6 +1,6 @@
 {
   "name": "actual-budget-mcp-es",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "description": "MCP server for Actual Budget — LLM-ready financial assistant with correct semantics, unit conversion and real split transactions",
   "type": "module",
   "main": "dist/index.js",
