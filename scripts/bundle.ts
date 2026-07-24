@@ -40,6 +40,8 @@ for (const file of [
   'icon.png',
   'README.md',
   'README.es.md',
+  'PRIVACY.md',
+  'PRIVACY.es.md',
   'LICENSE',
 ]) {
   fs.copyFileSync(path.join(root, file), path.join(stage, file));

@@ -14,6 +14,7 @@
     "url": "https://github.com/marcoaperez/actual-budget-mcp-es"
   },
   "license": "MIT",
+  "privacy_policies": ["https://github.com/marcoaperez/actual-budget-mcp-es/blob/main/PRIVACY.md"],
   "icon": "icon.png",
   "keywords": ["actual-budget", "finance", "budgeting", "personal-finance"],
   "server": {

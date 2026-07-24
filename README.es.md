@@ -47,9 +47,12 @@ Descarga el `.mcpb` más reciente y vuelve a arrastrarlo — tu configuración s
 El bundle lleva un módulo nativo de SQLite (`better-sqlite3`) compilado para un ABI de Node
 concreto. Claude Desktop no ejecuta las extensiones con el Node del sistema: las arranca
 dentro de su propio Electron, así que el módulo tiene que corresponder a *ese* runtime.
-Cuando una actualización de Claude Desktop lo cambia, el módulo deja de cargar, Actual
-cierra el presupuesto y todas las tools responden que el presupuesto está cerrado y no se
-pudo volver a abrir.
+Cuando una actualización de Claude Desktop lo cambia, el módulo deja de cargar y la
+extensión no puede funcionar.
+
+El servidor lo detecta al arrancar y lo dice sin rodeos: todas las tools responden con los
+dos números de versión implicados y te indican que instales un bundle nuevo, en vez de
+fallar con un mensaje confuso sobre que el presupuesto está cerrado.
 
 No hay nada que puedas hacer desde tu lado: hay que reempaquetar el bundle para el nuevo
 runtime. Descarga una versión más reciente, o constrúyela tú con `npm run bundle` en un
@@ -197,6 +200,16 @@ Tres cosas que conviene saber antes de activar la escritura:
   bundle de Claude Desktop no expone esta opción).
 
 El modelo de seguridad completo — frontera de confianza, credenciales, operaciones destructivas, validación de entrada y cómo reportar una vulnerabilidad — está en [SECURITY.md](SECURITY.md) (en inglés).
+
+## Política de privacidad
+
+Este software no recopila nada: sin telemetría, sin analítica, sin comprobación de
+actualizaciones. Se ejecuta en tu máquina y habla solo con **tu propio** servidor de Actual
+Budget y con el cliente MCP al que lo conectes — que verá los datos financieros por los que
+preguntes, bajo su propia política de privacidad. La copia local de tu presupuesto está sin
+cifrar y vive solo en tu máquina.
+
+Texto completo: [PRIVACY.es.md](PRIVACY.es.md) · [in English](PRIVACY.md)
 
 ## Desarrollo
 

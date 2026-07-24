@@ -22,6 +22,8 @@
     "dist",
     "README.md",
     "README.es.md",
+    "PRIVACY.md",
+    "PRIVACY.es.md",
     "LICENSE"
   ],
   "bin": {

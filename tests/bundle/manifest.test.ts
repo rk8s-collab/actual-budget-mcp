@@ -78,6 +78,14 @@ describe('manifest ↔ code consistency', () => {
     expect(cfg.enableWrite).toBe(true);
   });
 
+  it('declares an HTTPS privacy policy — the Connectors Directory rejects submissions without one', () => {
+    expect(Array.isArray(manifest.privacy_policies)).toBe(true);
+    expect(manifest.privacy_policies.length).toBeGreaterThan(0);
+    for (const url of manifest.privacy_policies as string[]) {
+      expect(url.startsWith('https://'), `${url} debe ser HTTPS`).toBe(true);
+    }
+  });
+
   it('does not expose ACTUAL_DATA_DIR in the form', () => {
     expect(Object.keys(manifest.user_config)).not.toContain('data_dir');
     expect(JSON.stringify(manifest.server.mcp_config.env)).not.toContain('ACTUAL_DATA_DIR');
