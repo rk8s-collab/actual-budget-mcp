@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import * as fs from 'node:fs';
 import { ActualClient } from '../../src/core/actual-client.js';
+import type { NativeCheckResult } from '../../src/core/native-check.js';
 
 // El namespace ESM de node:fs no es spy-able (propiedades no reconfigurables):
 // se mockea el módulo entero y se conserva el resto de la API real.
@@ -230,5 +231,67 @@ describe('contención entre instancias', () => {
     const c = new ActualClient(api, cfg, () => 0);
     await expect(c.ensureReady()).rejects.toThrow(/ACTUAL_DATA_DIR/);
     mkdir.mockRestore();
+  });
+});
+
+// Comprobación de compatibilidad del módulo nativo (better-sqlite3 bajo el Electron de
+// Claude Desktop): ver src/core/native-check.ts. Se inyecta por constructor precisamente
+// para que estos tests (y todos los de arriba, que no la pasan) no disparen un dlopen
+// real — su valor por defecto es inerte ({ ok: true }) y solo src/index.ts lo sustituye
+// por la comprobación real en producción.
+describe('ActualClient — comprobación de ABI del módulo nativo', () => {
+  it('no afecta a ensureReady cuando la comprobación no se inyecta (valor por defecto inerte)', async () => {
+    const api = mockApi();
+    const c = new ActualClient(api, cfg, () => 0);
+    await expect(c.ensureReady()).resolves.toBeDefined();
+  });
+
+  it('lanza el error del catálogo con los dos NODE_MODULE_VERSION antes de tocar la API', async () => {
+    const api = mockApi();
+    const checkNative = vi.fn(
+      (): NativeCheckResult => ({ ok: false, compiladoPara: 146, runtime: 147 }),
+    );
+    const c = new ActualClient(api, cfg, () => 0, checkNative);
+    await expect(c.ensureReady()).rejects.toThrow(/146/);
+    await expect(c.ensureReady()).rejects.toThrow(/147/);
+    expect(api.init).not.toHaveBeenCalled();
+    expect(api.downloadBudget).not.toHaveBeenCalled();
+  });
+
+  it('ejecuta la comprobación una sola vez aunque ensureReady se llame varias veces', async () => {
+    const api = mockApi();
+    const checkNative = vi.fn((): NativeCheckResult => ({ ok: true }));
+    const c = new ActualClient(api, cfg, () => 0, checkNative);
+    await c.ensureReady();
+    await c.ensureReady();
+    await c.ensureReady();
+    expect(checkNative).toHaveBeenCalledTimes(1);
+  });
+
+  it('sigue lanzando en llamadas posteriores usando el resultado cacheado (sin repetir la comprobación)', async () => {
+    const api = mockApi();
+    const checkNative = vi.fn(
+      (): NativeCheckResult => ({ ok: false, compiladoPara: 146, runtime: 147 }),
+    );
+    const c = new ActualClient(api, cfg, () => 0, checkNative);
+    await expect(c.ensureReady()).rejects.toThrow(/146/);
+    await expect(c.ensureReady()).rejects.toThrow(/146/);
+    expect(checkNative).toHaveBeenCalledTimes(1);
+  });
+
+  it('registra una línea en stderr, una sola vez, cuando detecta el desajuste', async () => {
+    const api = mockApi();
+    const checkNative = vi.fn(
+      (): NativeCheckResult => ({ ok: false, compiladoPara: 146, runtime: 147 }),
+    );
+    const errorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
+    const c = new ActualClient(api, cfg, () => 0, checkNative);
+    await expect(c.ensureReady()).rejects.toThrow();
+    await expect(c.ensureReady()).rejects.toThrow();
+    const lineasNativas = errorSpy.mock.calls.filter((call) =>
+      String(call[0]).includes('146'),
+    );
+    expect(lineasNativas.length).toBe(1);
+    errorSpy.mockRestore();
   });
 });

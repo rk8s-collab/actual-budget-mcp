@@ -82,6 +82,13 @@ const es = {
     `No se pudo abrir el presupuesto ni en ${primaryDir} (${primaryErr}) ni en la copia propia ` +
     `${fallbackDir} (${fallbackErr}). Si tienes varios clientes MCP conectados a la vez, cierra ` +
     'los que no uses o da a cada uno su propio ACTUAL_DATA_DIR.',
+  nativeAbiMismatch: (compiladoPara: number, runtime: number) =>
+    'El módulo nativo de esta extensión se compiló para NODE_MODULE_VERSION ' +
+    `${compiladoPara}, pero Claude Desktop ejecuta ahora la versión ${runtime}. Esto pasa cuando ` +
+    'Claude Desktop actualiza su Electron interno después de instalar el bundle. La extensión no ' +
+    'puede funcionar hasta que se reempaquete para esta versión: descarga una nueva desde ' +
+    'https://github.com/marcoaperez/actual-budget-mcp-es/releases/latest e instálala de nuevo. ' +
+    'Si usas la instalación manual (sin el bundle .mcpb), esto no te afecta.',
 };
 
 export type Messages = typeof es;
@@ -143,6 +150,13 @@ const en: Messages = {
     `Could not open the budget either at ${primaryDir} (${primaryErr}) or in its own copy at ` +
     `${fallbackDir} (${fallbackErr}). If you have several MCP clients connected at the same time, ` +
     'close the ones you are not using or give each its own ACTUAL_DATA_DIR.',
+  nativeAbiMismatch: (compiladoPara: number, runtime: number) =>
+    "This extension's native module was compiled for NODE_MODULE_VERSION " +
+    `${compiladoPara}, but Claude Desktop is now running version ${runtime}. This happens when ` +
+    'Claude Desktop updates its internal Electron after the bundle was installed. The extension ' +
+    'cannot work until it is repackaged for this version: download a new one from ' +
+    'https://github.com/marcoaperez/actual-budget-mcp-es/releases/latest and reinstall it. ' +
+    'If you use the manual installation (without the .mcpb bundle), this does not affect you.',
 };
 
 const CATALOGUES: Record<'es' | 'en', Messages> = { es, en };

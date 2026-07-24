@@ -1,5 +1,9 @@
 // actual-client.ts — envoltura singleton sobre @actual-app/api.
 // Task 6 llama a ensureReady() antes de cada handler de tool. Semántica:
+// - Antes de nada: comprobación de ABI del módulo nativo (ver native-check.ts), una sola
+//   vez y cacheada — si el binario de better-sqlite3 no coincide con el runtime (Electron
+//   de Claude Desktop tras una actualización mayor), se lanza un error legible en vez de
+//   dejar que el síntoma (presupuesto cerrado) tape la causa real.
 // - Primera llamada: init(...) + downloadBudget(syncId) y una sincronización inicial.
 // - Llamadas posteriores: sync() solo si expiró el TTL.
 // - Si sync() falla: las lecturas devuelven {stale:true}; las escrituras (forWrite) relanzan.
@@ -9,6 +13,7 @@
 import * as fs from 'node:fs';
 import type { Config } from './config.js';
 import { msg } from './messages.js';
+import type { NativeCheckResult } from './native-check.js';
 
 // El servidor stdio se arranca UNA VEZ POR CLIENTE conectado (Claude Desktop, Claude Code,
 // bridges...). Actual no permite que dos procesos abran el mismo presupuesto: el segundo
@@ -24,11 +29,17 @@ export class ActualClient {
   private initPromise: Promise<void> | null = null;
   private lastSyncMs: number | null = null;
   private activeDataDir: string | null = null;
+  private nativeCheckResult: NativeCheckResult | null = null;
 
   constructor(
     private api: any,
     private config: Config,
     private now: () => number = () => Date.now(),
+    // Inyectable para poder testear la comprobación de ABI con dobles. El valor por
+    // defecto es inerte (siempre "ok"): la comprobación real con dlopen SOLO la cablea
+    // src/index.ts al construir el cliente para producción — así ningún test existente
+    // (que no la pasa) llega a disparar un dlopen real.
+    private checkNative: () => NativeCheckResult = () => ({ ok: true }),
   ) {}
 
   /** Directorio de datos realmente en uso: puede no ser el configurado si hubo contención. */
@@ -78,9 +89,30 @@ export class ActualClient {
     console.error(`[actual-mcp] Presupuesto abierto en ${this.activeDataDir}`);
   }
 
+  // Corre la comprobación de ABI del módulo nativo UNA sola vez (se cachea en
+  // nativeCheckResult) y relanza el error del catálogo en cada llamada mientras el
+  // desajuste siga presente. La línea a stderr se registra solo la primera vez: no tiene
+  // sentido repetirla en cada tool si la causa no ha cambiado.
+  private ensureNativeAbiOk(): void {
+    if (this.nativeCheckResult === null) {
+      this.nativeCheckResult = this.checkNative();
+      if (!this.nativeCheckResult.ok) {
+        console.error(
+          `[actual-mcp] módulo nativo incompatible: compilado para NODE_MODULE_VERSION ${this.nativeCheckResult.compiladoPara}, el runtime actual exige NODE_MODULE_VERSION ${this.nativeCheckResult.runtime}`,
+        );
+      }
+    }
+    if (!this.nativeCheckResult.ok) {
+      throw new Error(
+        msg(this.config).nativeAbiMismatch(this.nativeCheckResult.compiladoPara, this.nativeCheckResult.runtime),
+      );
+    }
+  }
+
   async ensureReady(
     opts: { forWrite?: boolean } = {},
   ): Promise<{ stale: boolean; lastSynced: string | null }> {
+    this.ensureNativeAbiOk();
     if (!this.initialized) {
       if (!this.initPromise) {
         this.initPromise = (async () => {

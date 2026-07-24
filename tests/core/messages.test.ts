@@ -80,6 +80,25 @@ describe('mensajes del core (Tarea 4)', () => {
   });
 });
 
+describe('nativeAbiMismatch (aviso de módulo nativo incompatible)', () => {
+  it('menciona los dos NODE_MODULE_VERSION y cambia de idioma', () => {
+    const es = messagesFor('es'), en = messagesFor('en');
+    const textoEs = es.nativeAbiMismatch(146, 147);
+    const textoEn = en.nativeAbiMismatch(146, 147);
+    expect(textoEs).toContain('146');
+    expect(textoEs).toContain('147');
+    expect(textoEn).toContain('146');
+    expect(textoEn).toContain('147');
+    expect(textoEn).not.toBe(textoEs);
+  });
+  it('menciona la URL de la última release', () => {
+    const es = messagesFor('es'), en = messagesFor('en');
+    const url = 'https://github.com/marcoaperez/actual-budget-mcp-es/releases/latest';
+    expect(es.nativeAbiMismatch(146, 147)).toContain(url);
+    expect(en.nativeAbiMismatch(146, 147)).toContain(url);
+  });
+});
+
 describe('mensajes de esquema', () => {
   it('sale en español por defecto', () => {
     const r = ID.safeParse('no-es-uuid');
