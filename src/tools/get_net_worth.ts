@@ -4,6 +4,7 @@ import type { ToolDef } from '../core/types.js';
 
 export const tool: ToolDef = {
   name: 'get_net_worth',
+  title: 'Get net worth',
   description: 'Full net worth: on-budget + off-budget (pensions, funds, mortgage) with per-account breakdown. Open accounts only.',
   readOnly: true,
   inputSchema: {},

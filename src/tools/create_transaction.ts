@@ -25,6 +25,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'create_transaction',
+  title: 'Create transaction',
   description: 'Record a new transaction (expense or income) in an account. Amount in currency units. Optional splits create it already divided. Returns the created transaction.',
   readOnly: false,
   annotations: { destructiveHint: false, idempotentHint: false },

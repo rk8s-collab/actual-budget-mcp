@@ -19,6 +19,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'split_transaction',
+  title: 'Split transaction',
   description: 'Split an existing transaction into parts with real subtransactions. Parts must sum exactly to the original amount (integer-cent validation); adjust_last=true computes the final part. Internally replaces the transaction (new id).',
   readOnly: false,
   annotations: { destructiveHint: true, idempotentHint: false },

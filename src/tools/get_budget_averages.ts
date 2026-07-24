@@ -20,6 +20,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'get_budget_averages',
+  title: 'Get category spending averages',
   description: 'Per-category spending average, median and max over the last N complete months — input for budget preparation. Median resists anomalous months. Spending positive; transfers and income excluded.',
   readOnly: true,
   inputSchema: input,

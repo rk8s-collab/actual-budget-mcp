@@ -11,6 +11,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'get_budget_month',
+  title: 'Get monthly budget',
   description: 'Budget status for a month: to-budget, income, totals and per-category budgeted/spent/balance. Category ids included for set_budget.',
   readOnly: true,
   inputSchema: input,

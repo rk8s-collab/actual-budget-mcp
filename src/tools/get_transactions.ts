@@ -22,6 +22,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'get_transactions',
+  title: 'Search transactions',
   description: 'Search transactions by date range with optional filters (account, category, text, amount range, uncategorized). Transfers excluded by default. Paginated (max 200).',
   readOnly: true,
   inputSchema: input,

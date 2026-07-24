@@ -12,6 +12,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'update_category_note',
+  title: 'Update category note',
   // Sobrescribe la nota anterior (Actual solo guarda una por categoría): destructivo.
   description: 'Overwrite the note of a category (used by Actual for goal templates, e.g. "#template 350"). Replaces any existing note; returns the previous and the stored one.',
   readOnly: false,

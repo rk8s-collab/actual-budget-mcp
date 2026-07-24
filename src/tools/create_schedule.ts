@@ -26,6 +26,7 @@ const schema = z.object(input).refine((v) => !!v.date !== !!v.recurrence, {
 
 export const tool: ToolDef = {
   name: 'create_schedule',
+  title: 'Create schedule',
   description: 'Create a recurring (or one-off) scheduled transaction in Actual. Amount in currency units. Payee resolved by name from existing payees.',
   readOnly: false,
   annotations: { destructiveHint: false, idempotentHint: false },

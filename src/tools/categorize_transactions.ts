@@ -14,6 +14,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'categorize_transactions',
+  title: 'Categorize transactions',
   description: 'Bulk-categorize transactions: [{transaction_id, category_id}] (max 50). Each update applies independently. The result names exactly which succeeded (verified by re-reading), which failed, and which were sent but could not be confirmed.',
   readOnly: false,
   annotations: { destructiveHint: true, idempotentHint: true },

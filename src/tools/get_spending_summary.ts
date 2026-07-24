@@ -25,6 +25,7 @@ const schema = z.object(input).refine(
 
 export const tool: ToolDef = {
   name: 'get_spending_summary',
+  title: 'Summarize spending',
   description: 'Aggregated spending by category, payee or month. Transfers always excluded. Spending amounts are positive; income negative. Sorted descending.',
   readOnly: true,
   inputSchema: input,

@@ -9,6 +9,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'get_schedules',
+  title: 'List schedules',
   description: 'Recurring schedules configured in Actual (name, next date, amount).',
   readOnly: true,
   inputSchema: input,

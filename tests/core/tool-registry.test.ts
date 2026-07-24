@@ -46,3 +46,23 @@ describe('catalog (plan 2)', () => {
     expect(allTools.map((t) => t.name)).toContain('update_category_note');
   });
 });
+
+describe('títulos de tools (Connectors Directory)', () => {
+  it('cada tool declara un title no vacío', () => {
+    for (const tool of allTools) {
+      expect(tool.title, `${tool.name} sin title`).toBeTruthy();
+      expect(tool.title.trim().length, `${tool.name} con title vacío`).toBeGreaterThan(0);
+    }
+  });
+
+  it('el title es distinto del name (no un alias trivial)', () => {
+    for (const tool of allTools) {
+      expect(tool.title, `${tool.name}: title igual a name`).not.toBe(tool.name);
+    }
+  });
+
+  it('no hay titles duplicados entre tools', () => {
+    const titles = allTools.map((t) => t.title);
+    expect(new Set(titles).size, 'hay titles repetidos').toBe(titles.length);
+  });
+});

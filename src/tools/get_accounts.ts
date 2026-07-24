@@ -11,6 +11,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'get_accounts',
+  title: 'List accounts',
   description: 'List accounts with current balances. Off-budget accounts (pensions, funds, mortgage) included by default.',
   readOnly: true,
   inputSchema: input,

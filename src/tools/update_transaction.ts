@@ -20,6 +20,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'update_transaction',
+  title: 'Update transaction',
   description: 'Update fields of an existing transaction (category, payee, notes, date, amount, cleared). Amount in currency units. Returns the resulting transaction.',
   readOnly: false,
   // Sobrescribe los campos indicados de la transacción: destructivo (en MCP, false = solo aditivo).

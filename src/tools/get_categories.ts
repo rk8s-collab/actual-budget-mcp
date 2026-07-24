@@ -9,6 +9,7 @@ const schema = z.object(input);
 
 export const tool: ToolDef = {
   name: 'get_categories',
+  title: 'List categories',
   description: 'Category groups and categories with their IDs (IDs are required by write tools).',
   readOnly: true,
   inputSchema: input,

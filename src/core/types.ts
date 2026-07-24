@@ -14,6 +14,7 @@ export interface ToolContext {
 
 export interface ToolDef {
   name: string;
+  title: string;                     // nombre legible para el cliente MCP (en inglés, como description)
   description: string;
   readOnly: boolean;                 // false => only registered when enableWrite
   inputSchema: ZodRawShape;          // Zod raw shape consumed by SDK registerTool

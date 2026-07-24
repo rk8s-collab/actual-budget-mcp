@@ -17,6 +17,7 @@ const schema = z.object(input).refine((v) => v.from_category_id !== v.to_categor
 
 export const tool: ToolDef = {
   name: 'transfer_budget',
+  title: 'Transfer budget',
   description: 'Move budgeted money between two categories within a month. Returns both cells with their new budgeted values.',
   readOnly: false,
   // Reescribe el asignado de ambas categorías: destructivo (en MCP, false = solo aditivo).
