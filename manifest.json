@@ -102,7 +102,7 @@
     { "name": "create_transaction", "description": "Record a new expense or income, optionally already split" },
     { "name": "create_schedule", "description": "Create a recurring or one-off scheduled transaction" },
     { "name": "set_budget", "description": "Assign budget amounts to categories, single or bulk" },
-    { "name": "transfer_budget", "description": "Move budgeted money between categories" },
+    { "name": "transfer_budget", "description": "Reallocate a budgeted amount between categories (envelope budgeting); moves no funds and makes no payment" },
     { "name": "update_category_note", "description": "Write a category note (goal templates)" }
   ]
 }
