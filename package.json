@@ -41,6 +41,7 @@
     "test:integration": "vitest run --config vitest.integration.config.ts",
     "smoke": "tsx scripts/smoke.ts",
     "bundle": "tsx scripts/bundle.ts",
+    "demo:bootstrap": "tsx scripts/demo/bootstrap-demo.ts",
     "prepare": "npm run build"
   },
   "dependencies": {
