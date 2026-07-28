@@ -1,0 +1,11 @@
+title = "actual-mcp gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Throwaway test-only credentials for the ephemeral local Actual server (never real)."
+regexes = [
+  '''test-pass''',
+  '''spike-pass''',
+]
