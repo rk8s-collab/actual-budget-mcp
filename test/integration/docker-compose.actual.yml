@@ -1,0 +1,10 @@
+# Throwaway actual-server for the Task 0.1 spike (Phase 0, demo instance investigation).
+# Local only, never deployed. Pinned tag matches the installed @actual-app/api version (26.7.0);
+# digest recorded in docs/superpowers/notes/2026-07-27-demo-spike.md for Phase 3 to pin by digest.
+services:
+  actual:
+    image: actualbudget/actual-server:26.7.0
+    ports:
+      - "5006:5006"
+    tmpfs:
+      - /data          # ephemeral: wiped on container removal
