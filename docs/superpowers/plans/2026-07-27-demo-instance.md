@@ -129,6 +129,14 @@ the "what data" decision from the "how to apply it" I/O.
 **Files:**
 - Create: `scripts/demo/dataset.ts`
 - Test: `scripts/demo/dataset.test.ts`
+- Modify: `vitest.config.ts` — broaden `include` so co-located script tests run under `npm test`.
+
+> **Test layout note (from Phase 0 follow-up):** `vitest.config.ts` currently has
+> `include: ['tests/**/*.test.ts']`, so a test under `scripts/` is only run when its path is passed
+> explicitly, not by `npm test`. This task broadens `include` to `['tests/**/*.test.ts',
+> 'scripts/**/*.test.ts']`. The Phase 2 integration tests (`*.integration.test.ts`) need Docker, so
+> **Task 2.1** additionally excludes them from the default run and adds a separate `test:integration`
+> command — do not add that exclusion here (no integration test exists yet; keep this task minimal).
 
 **Interfaces:**
 - Produces: `buildDemoDataset(): DemoDataset` where
@@ -210,12 +218,23 @@ budgets, and one rule (`payee contains "Rent" → set category "Rent"`). All amo
 Run: `npx vitest run scripts/demo/dataset.test.ts`
 Expected: PASS (5 tests).
 
-- [ ] **Step 5: Commit**
+- [ ] **Step 5: Broaden the Vitest include and verify the full suite**
+
+In `vitest.config.ts`, change `include: ['tests/**/*.test.ts']` to
+`include: ['tests/**/*.test.ts', 'scripts/**/*.test.ts']`.
+
+Run: `npm test`
+Expected: the whole existing suite still passes AND the new `dataset.test.ts` (5 tests) is now
+picked up by the default run. Output pristine.
+
+- [ ] **Step 6: Commit**
 
 ```bash
-git add scripts/demo/dataset.ts scripts/demo/dataset.test.ts
+git add scripts/demo/dataset.ts scripts/demo/dataset.test.ts vitest.config.ts
 git commit -m "feat(demo): deterministic demo dataset covering all tool surfaces"
 ```
+
+End the commit message with the trailer `Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>`.
 
 ---
 
