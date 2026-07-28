@@ -11,7 +11,55 @@ import type { DemoDataset } from './dataset.js';
 // so we accept the module namespace loosely typed.
 type ActualApi = typeof import('@actual-app/api');
 
+// The dataset references categories, groups, and accounts by bare name (see dataset.ts).
+// Duplicate names within any of these lists would make later name -> id lookups ambiguous:
+// the second definition would silently overwrite the first in the id maps below, and
+// transactions/budgets/rules would attach to the wrong entity. Fail fast instead.
+function assertNoDuplicateNames(
+  items: { name: string }[],
+  label: string,
+  reason: string,
+): void {
+  const seen = new Set<string>();
+  for (const item of items) {
+    if (seen.has(item.name)) {
+      throw new Error(`Demo dataset invalid: duplicate ${label} name "${item.name}" — ${reason}`);
+    }
+    seen.add(item.name);
+  }
+}
+
+function validateDataset(dataset: DemoDataset): void {
+  assertNoDuplicateNames(
+    dataset.categories,
+    'category',
+    'category names must be unique because transactions reference categories by name',
+  );
+  assertNoDuplicateNames(
+    dataset.groups,
+    'category group',
+    'category group names must be unique because categories reference groups by name',
+  );
+  assertNoDuplicateNames(
+    dataset.accounts,
+    'account',
+    'account names must be unique because transactions reference accounts by name',
+  );
+}
+
+// Looks up a name in a name -> id map, throwing a clear error instead of returning
+// `undefined` silently when the dataset references a name that was never defined.
+function resolveRequired(map: Record<string, string>, name: string, kind: string, context: string): string {
+  const id = map[name];
+  if (id === undefined) {
+    throw new Error(`Unknown ${kind} "${name}" referenced by ${context}`);
+  }
+  return id;
+}
+
 export async function applyDataset(api: ActualApi, dataset: DemoDataset): Promise<void> {
+  validateDataset(dataset);
+
   // 1. Category groups + categories. A freshly-imported budget already seeds a default
   // "Income" group (with "Income" / "Starting Balances" categories) — reuse existing
   // groups/categories by name instead of creating duplicates, which the server rejects.
@@ -67,25 +115,32 @@ export async function applyDataset(api: ActualApi, dataset: DemoDataset): Promis
   // 4. Transactions, grouped by account.
   const txnsByAccount = new Map<string, unknown[]>();
   for (const t of dataset.transactions) {
+    resolveRequired(acctId, t.account, 'account', 'a transaction');
+
     const txn: Record<string, unknown> = {
       date: t.date,
       amount: t.amount,
     };
 
     if (t.transferAccount) {
-      txn.payee = transferPayeeIdByAccountName[t.transferAccount];
+      txn.payee = resolveRequired(
+        transferPayeeIdByAccountName,
+        t.transferAccount,
+        'transfer account',
+        'a transaction',
+      );
     } else if (t.payee) {
-      txn.payee = payeeId[t.payee];
+      txn.payee = resolveRequired(payeeId, t.payee, 'payee', 'a transaction');
     }
 
     if (t.category != null) {
-      txn.category = catId[t.category];
+      txn.category = resolveRequired(catId, t.category, 'category', 'a transaction');
     }
 
     if (t.splits) {
       txn.subtransactions = t.splits.map((s) => ({
         amount: s.amount,
-        category: s.category == null ? undefined : catId[s.category],
+        category: s.category == null ? undefined : resolveRequired(catId, s.category, 'category', 'a split'),
       }));
     }
 
@@ -100,7 +155,7 @@ export async function applyDataset(api: ActualApi, dataset: DemoDataset): Promis
 
   // 5. Budgets.
   for (const b of dataset.budgets) {
-    await api.setBudgetAmount(b.month, catId[b.category], b.amount);
+    await api.setBudgetAmount(b.month, resolveRequired(catId, b.category, 'category', 'a budget'), b.amount);
   }
 
   // 6. Rules — resolve id-typed condition/action values (category/account/payee) before
@@ -111,11 +166,11 @@ export async function applyDataset(api: ActualApi, dataset: DemoDataset): Promis
     payee: payeeId,
   };
 
-  const resolveIdValue = (field: string, op: string, value: unknown): unknown => {
+  const resolveIdValue = (field: string, op: string, value: unknown, context: string): unknown => {
     if (op !== 'set' && op !== 'is' && op !== 'isNot') return value; // literal string ops (contains, etc.)
     const resolver = idFieldResolvers[field];
     if (!resolver || typeof value !== 'string') return value;
-    return resolver[value] ?? value;
+    return resolveRequired(resolver, value, field, context);
   };
 
   for (const rule of dataset.rules) {
@@ -125,12 +180,12 @@ export async function applyDataset(api: ActualApi, dataset: DemoDataset): Promis
       conditions: rule.conditions.map((c) => ({
         field: c.field,
         op: c.op,
-        value: resolveIdValue(c.field, c.op, c.value),
+        value: resolveIdValue(c.field, c.op, c.value, 'a rule condition'),
       })),
       actions: rule.actions.map((a) => ({
         field: a.field,
         op: a.op,
-        value: resolveIdValue(a.field, a.op, a.value),
+        value: resolveIdValue(a.field, a.op, a.value, 'a rule action'),
       })),
     });
   }
