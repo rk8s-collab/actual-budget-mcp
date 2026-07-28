@@ -38,6 +38,7 @@
     "start": "node dist/index.js",
     "test": "vitest run",
     "test:watch": "vitest",
+    "test:integration": "vitest run --config vitest.integration.config.ts",
     "smoke": "tsx scripts/smoke.ts",
     "bundle": "tsx scripts/bundle.ts",
     "prepare": "npm run build"
