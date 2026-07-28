@@ -87,10 +87,17 @@ export async function applyDataset(api: ActualApi, dataset: DemoDataset): Promis
     }
   }
 
-  // 2. Accounts.
+  // 2. Accounts. Accounts cannot be hard-deleted via the API (only closeAccount), so a reset
+  // wipes everything else and reuses the existing accounts by name instead of re-creating them
+  // (which would duplicate them). Reuse existing accounts by name; only create missing ones.
   const acctId: Record<string, string> = {};
+  for (const existing of await api.getAccounts()) {
+    acctId[existing.name] = existing.id;
+  }
   for (const a of dataset.accounts) {
-    acctId[a.name] = await api.createAccount({ name: a.name, offbudget: a.offBudget });
+    if (!(a.name in acctId)) {
+      acctId[a.name] = await api.createAccount({ name: a.name, offbudget: a.offBudget });
+    }
   }
 
   // 3. Payees. Transfer payees are auto-created per account by the server — resolve them from

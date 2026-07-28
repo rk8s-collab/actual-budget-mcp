@@ -42,6 +42,8 @@
     "smoke": "tsx scripts/smoke.ts",
     "bundle": "tsx scripts/bundle.ts",
     "demo:bootstrap": "tsx scripts/demo/bootstrap-demo.ts",
+    "demo:reset": "tsx scripts/demo/reset-demo.ts",
+    "demo:seed": "tsx scripts/demo/seed-demo.ts",
     "prepare": "npm run build"
   },
   "dependencies": {

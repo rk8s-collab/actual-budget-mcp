@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 import * as api from '@actual-app/api';
-import { ensureServerReady } from '../../test/integration/setup.js';
+import { ensureServerReady, ensureDataDir } from '../../test/integration/setup.js';
 import { buildDemoDataset } from './dataset.js';
 import { applyDataset } from './apply.js';
 
@@ -8,7 +8,7 @@ import { applyDataset } from './apply.js';
 describe('applyDataset', () => {
   beforeAll(async () => {
     await ensureServerReady();
-    await api.init({ dataDir: '/tmp/demo-apply', serverURL: 'http://localhost:5006', password: 'test-pass' });
+    await api.init({ dataDir: ensureDataDir('/tmp/demo-apply'), serverURL: 'http://localhost:5006', password: 'test-pass' });
     await api.runImport('ApplyTest', async () => {});
   });
   afterAll(async () => {

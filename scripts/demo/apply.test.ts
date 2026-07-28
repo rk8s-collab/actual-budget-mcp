@@ -61,6 +61,7 @@ describe('applyDataset — duplicate name guard (Finding 1)', () => {
 
     const api: any = {
       getCategoryGroups: vi.fn(async () => []),
+      getAccounts: vi.fn(async () => []),
       getPayees: vi.fn(async () => []),
       sync: vi.fn(async () => undefined),
     };

@@ -1,3 +1,12 @@
+import * as fs from 'node:fs';
+
+// api.init({dataDir}) does NOT create dataDir itself — callers must ensure it exists first.
+// Returns the same dir so it can be used inline: api.init({dataDir: ensureDataDir(dir), ...}).
+export function ensureDataDir(dir: string): string {
+  fs.mkdirSync(dir, { recursive: true });
+  return dir;
+}
+
 // Ensures the ephemeral actual-server is up and bootstrapped with a known password.
 export async function ensureServerReady(
   url = 'http://localhost:5006',
