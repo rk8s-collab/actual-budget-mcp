@@ -22,12 +22,18 @@ async function run(): Promise<number> {
     await api.init({ dataDir, serverURL: url, password });
     await api.runImport('ResetCheck', async () => {});
     await applyDataset(api, buildDemoDataset()); // first seed
-    const syncId1 = (await api.getBudgets()).find((b: any) => b.groupId).groupId;
+    const budgets1 = await api.getBudgets();
+    const b1 = budgets1.find((x: any) => x.groupId) ?? budgets1[0];
+    if (!b1?.groupId) throw new Error('Could not determine Sync ID (groupId)');
+    const syncId1 = b1.groupId;
     const accounts1 = (await api.getAccounts()).length;
     await wipeBudgetContents(api);
     await applyDataset(api, buildDemoDataset()); // reset
     await api.sync();
-    const syncId2 = (await api.getBudgets()).find((b: any) => b.groupId).groupId;
+    const budgets2 = await api.getBudgets();
+    const b2 = budgets2.find((x: any) => x.groupId) ?? budgets2[0];
+    if (!b2?.groupId) throw new Error('Could not determine Sync ID (groupId)');
+    const syncId2 = b2.groupId;
     const accounts2 = (await api.getAccounts()).length;
     const categories = (await api.getCategories()).length;
     const rules = (await api.getRules()).length;

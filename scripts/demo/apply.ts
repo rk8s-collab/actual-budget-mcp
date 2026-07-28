@@ -81,7 +81,7 @@ export async function applyDataset(api: ActualApi, dataset: DemoDataset): Promis
     if (!(c.name in catId)) {
       catId[c.name] = await api.createCategory({
         name: c.name,
-        group_id: groupId[c.group],
+        group_id: resolveRequired(groupId, c.group, 'category group', 'a category'),
         is_income: c.isIncome,
       });
     }

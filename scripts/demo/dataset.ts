@@ -148,7 +148,7 @@ export function buildDemoDataset(): DemoDataset {
       {
         stage: null,
         conditionsOp: 'and',
-        conditions: [{ field: 'payee', op: 'contains', value: 'Rent' }],
+        conditions: [{ field: 'payee', op: 'contains', value: 'Landlord' }],
         actions: [{ field: 'category', op: 'set', value: 'Rent' }],
       },
     ],

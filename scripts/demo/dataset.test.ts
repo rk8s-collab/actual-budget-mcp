@@ -23,6 +23,19 @@ describe('buildDemoDataset', () => {
     for (const t of d.transactions) {
       expect(accts.has(t.account)).toBe(true);
       if (t.category) expect(cats.has(t.category)).toBe(true);
+      if (t.transferAccount) expect(accts.has(t.transferAccount)).toBe(true);
+      if (t.splits) {
+        for (const s of t.splits) {
+          if (s.category) expect(cats.has(s.category)).toBe(true);
+        }
+      }
+    }
+  });
+  it('split amounts sum exactly to the parent transaction amount', () => {
+    for (const t of d.transactions) {
+      if (!t.splits) continue;
+      const sum = t.splits.reduce((acc, s) => acc + s.amount, 0);
+      expect(sum).toBe(t.amount);
     }
   });
   it('is deterministic', () => {
