@@ -43,6 +43,17 @@ systemd timer.
 Resolves spec Open Questions 1–5 against a **local ephemeral `actual-server`**, so later tasks use
 confirmed API behaviour, not guesses. Deliverable: a short findings doc committed to the repo.
 
+> **Phase 0 findings (done — see `docs/superpowers/notes/2026-07-27-demo-spike.md`):**
+> - **OQ1:** `runImport(name, fn)` creates AND uploads the budget to the server in one call.
+> - **OQ2:** the Sync ID is **`groupId`**, NOT `cloudFileId` (proven empirically:
+>   `downloadBudget(groupId)` works, `downloadBudget(cloudFileId)` fails). It is **stable** across a
+>   content wipe. Later tasks below use `.groupId`.
+> - **OQ3:** password bootstrap is **HTTP-only** (`POST /account/bootstrap`), idempotent — treat
+>   `"reason":"already-bootstrapped"` as success. No env var sets it.
+> - **OQ4:** `ACTUAL_TRUSTED_PROXIES` is a comma-separated CIDR list; the default already covers
+>   Docker bridge subnets, so a same-network sidecar needs no override.
+> - **Image pin:** `actualbudget/actual-server:26.7.0` @ `sha256:e18b7fbfec6157a368fad4146563f397502e9da70a120aeaeac63b4977405d1c`.
+
 ### Task 0.1: Ephemeral actual-server for local dev & tests
 
 **Files:**
@@ -344,14 +355,16 @@ git commit -m "feat(demo): fail-loud env-var loader for demo scripts"
 **Interfaces:**
 - Consumes: `loadDemoEnv`, `buildDemoDataset`, `applyDataset`.
 - Produces: a CLI that inits against the server, `runImport('Actual MCP Demo', …)` applying the
-  dataset, then prints the resulting **Sync ID** (from `getBudgets()`, per the spike) to stdout so
-  the maintainer records it. Run once.
+  dataset, then prints the resulting **Sync ID** (the `groupId` field of `getBudgets()`, per the
+  Phase 0 spike — NOT `cloudFileId`) to stdout so the maintainer records it. Run once.
 
 - [ ] **Step 1: Write the script**
 
 Reads `ACTUAL_SERVER_URL`, `ACTUAL_SERVER_PASSWORD` via `loadDemoEnv`; `api.init(...)`;
 `await api.runImport('Actual MCP Demo', async () => { await applyDataset(api, buildDemoDataset()); })`;
-`const [file] = await api.getBudgets(); console.log('SYNC_ID=' + file.cloudFileId);`; `await api.shutdown()`.
+`const [file] = await api.getBudgets(); console.log('SYNC_ID=' + file.groupId);`; `await api.shutdown()`.
+(Per the spike, `getBudgets()` right after `runImport` returns local+remote entries that share the
+same `groupId`, so `[0].groupId` is correct.)
 
 - [ ] **Step 2: Add the npm script**
 
@@ -400,7 +413,7 @@ describe('reset keeps Sync ID stable', () => {
   beforeAll(async () => {
     await api.init({ dataDir: '/tmp/demo-reset', serverURL: 'http://localhost:5006', password: 'test-pass' });
     await api.runImport('ResetTest', async () => { await applyDataset(api, buildDemoDataset()); });
-    syncId = (await api.getBudgets())[0].cloudFileId;
+    syncId = (await api.getBudgets())[0].groupId;   // groupId is the Sync ID (Phase 0)
   }, 90_000);
   afterAll(async () => { await api.shutdown(); });
 
@@ -408,7 +421,7 @@ describe('reset keeps Sync ID stable', () => {
     await wipeBudgetContents(api);
     await applyDataset(api, buildDemoDataset());
     await api.sync();
-    expect((await api.getBudgets())[0].cloudFileId).toBe(syncId);
+    expect((await api.getBudgets())[0].groupId).toBe(syncId);
     expect((await api.getAccounts()).length).toBeGreaterThanOrEqual(3);
   }, 90_000);
 });
@@ -498,7 +511,7 @@ hostnames/domain to the maintainer's Cloudflare zone.
 ```yaml
 services:
   actual:
-    image: actualbudget/actual-server@sha256:<pin-from-spike>   # digest, not a tag
+    image: actualbudget/actual-server@sha256:e18b7fbfec6157a368fad4146563f397502e9da70a120aeaeac63b4977405d1c   # 26.7.0, from Phase 0
     restart: unless-stopped
     environment:
       ACTUAL_ALLOWED_LOGIN_METHODS: password
@@ -531,8 +544,8 @@ networks: { internal: { internal: false } }
 - [ ] **Step 3:** Put `TUNNEL_TOKEN` and the Actual password in `actual-demo/.env` (untracked;
   `.gitignore` covers it).
 - [ ] **Step 4: Bring it up** — `docker compose up -d`.
-- [ ] **Step 5: Bootstrap the server password** using the method confirmed in the spike (endpoint
-  POST or env preseed).
+- [ ] **Step 5: Bootstrap the server password** via `POST /account/bootstrap` with the demo
+  password (HTTP-only, per Phase 0; idempotent — treat `already-bootstrapped` as success).
 - [ ] **Step 6: Verify** — `curl -sf https://actual-demo.<domain>/info` returns JSON over HTTPS;
   the port 5006 is **not** reachable on the VM host (`curl http://localhost:5006/info` from the VM
   host fails); Cloudflare rate-limiting rule is active on the hostname.
