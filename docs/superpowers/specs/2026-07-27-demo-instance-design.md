@@ -122,11 +122,19 @@ implementation plan, in priority order.
 **1. Host & network isolation (highest priority).**
 Because the demo shares a VM with unrelated personal services (see "Host"), this is where the
 dedicated-VM guarantee is reconstructed. It is the load-bearing control of the whole design.
-- The demo container has **no route to the local network**, enforced by explicit `DROP` rules in
-  the host's `DOCKER-USER` iptables chain (the extension point Docker honours and does not
+- The demo container has **no route to the local network, nor to the private mesh network the
+  local router reaches**, enforced by explicit `DROP` rules — one per destination range — in the
+  host's `DOCKER-USER` iptables chain (the extension point Docker honours and does not
   overwrite). Its only permitted egress is the internet, which is all `cloudflared` needs.
+- **Both ranges, not just the local one.** A rule that drops traffic to the local subnet does
+  **not** stop traffic to the mesh network: that packet carries a different destination address
+  and the default gateway routes it. The host VM having no mesh client of its own is not
+  protection — the router has the route. Dropping only the local subnet would leave the mesh
+  (which reaches monitoring and other homes) reachable from a password-shared, publicly writable
+  container.
 - **Verified, not assumed:** before the demo is declared operational, a reachability probe from
-  inside the container to a local-network host must **fail**. This is a release gate.
+  inside the container must **fail against both** a local-network host and a mesh host. Two
+  probes, both failing. This is a release gate.
 - Its own Docker network, not attached to any other stack on the VM.
 - Admin access to the VM over the local network; **no public SSH port**.
 - VM firewall default-deny inbound; the only ingress path is the outbound Cloudflare Tunnel.
@@ -249,5 +257,6 @@ tests (and reviewers) leave behind.
 - After a reset, the Sync ID is unchanged and the data matches the seed baseline.
 - The Actual port is not reachable except through the tunnel; the home IP is not exposed; SSH is
   not publicly reachable.
-- The demo container cannot reach the local network (probe from inside the container fails).
+- The demo container cannot reach the local network **or the mesh network** (both probes from
+  inside the container fail).
 - `gitleaks` finds no secrets in the public repo; the seed contains no PII.

@@ -523,12 +523,17 @@ hostnames/domain to the maintainer's Cloudflare zone.
   public SSH port (admin over the local network).
 - [ ] **Step 2:** Bring up the stack's own Docker network (Task 3.2 creates it) and note its **real
   subnet** (`docker network inspect`).
-- [ ] **Step 3:** Add explicit `DROP` rules for that subnet towards the local network in the host's
-  `DOCKER-USER` iptables chain — the extension point Docker honours and does not overwrite — and
-  persist them across reboots. Exact subnets are private infra detail and live in `arcane-stacks`.
-- [ ] **Step 4: Verify (RELEASE GATE)** — a reachability probe from inside the demo container to a
-  local-network host **must fail** (e.g. `docker compose exec actual ping <lan-host>`), while egress to
-  the internet still works (`cloudflared` connects). Do not proceed to Task 3.3 until this passes.
+- [ ] **Step 3:** Add explicit `DROP` rules for that subnet in the host's `DOCKER-USER` iptables
+  chain — the extension point Docker honours and does not overwrite — **one rule per destination
+  range: the local network AND the private mesh network**. Persist them across reboots. Exact
+  subnets are private infra detail and live in `arcane-stacks`.
+  > **Do not drop the mesh rule** on the grounds that the host VM has no mesh client. The rule that
+  > drops the local subnet does not cover mesh destinations — different destination address, routed
+  > by the default gateway — and the router does have the route. This was checked, not assumed.
+- [ ] **Step 4: Verify (RELEASE GATE)** — reachability probes from inside the demo container **must
+  fail against both** a local-network host and a mesh host (e.g. `docker compose exec actual ping
+  <lan-host>` and the same against a mesh address), while egress to the internet still works
+  (`cloudflared` connects). Do not proceed to Task 3.3 until both fail.
 - [ ] **Step 5: Verify** — `ss -tlnp` shows no public SSH; `docker version` works.
 
 ### Task 3.2: actual-server + cloudflared compose (hardened)
@@ -615,8 +620,9 @@ networks: { internal: { internal: false } }
 
 ### Task 4.2: Security acceptance checklist (from the spec)
 
-- [ ] **Container cannot reach the local network** (`DOCKER-USER` DROP rules in place and the probe
-  of Task 3.1 Step 4 fails) — the release gate that replaces the dedicated-VM boundary.
+- [ ] **Container cannot reach the local network or the mesh network** (a `DOCKER-USER` DROP rule
+  for each range, and both probes of Task 3.1 Step 4 fail) — the release gate that replaces the
+  dedicated-VM boundary.
 - [ ] Admin over the local network, no public SSH; UFW default-deny; only ingress is the tunnel.
 - [ ] Stack on its own Docker network, not attached to any other stack on the VM.
 - [ ] Container: non-root, `cap_drop: ALL`, `no-new-privileges`, read-only rootfs, no `docker.sock`,
