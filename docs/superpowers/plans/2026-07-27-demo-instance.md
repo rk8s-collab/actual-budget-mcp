@@ -9,13 +9,13 @@ that doubles as the empirical-verification target for the classification write t
 **Architecture:** Three public, secret-free TypeScript scripts in this repo — `bootstrap-demo`,
 `seed-demo`, `reset-demo` — build and apply a deterministic demo dataset through `@actual-app/api`.
 They are exercised by integration tests against an ephemeral `actual-server` Docker container. The
-deployment (a disposable Proxmox VM running `actual-server` + a dedicated `cloudflared` tunnel,
-hardened, with a daily reset timer) lives in the private `arcane-stacks` repo and is executed by
-the maintainer following the runbook in Phase 3.
+deployment (a hardened, network-isolated `actual-server` container + a dedicated `cloudflared`
+tunnel, with a daily reset timer, on a Linux VM in the home lab) lives in the private
+`arcane-stacks` repo and is executed by the maintainer following the runbook in Phase 3.
 
 **Tech Stack:** TypeScript 6.x (ESM), `@actual-app/api` 26.7, Node ≥18, Vitest, Docker
-(`actualbudget/actual-server`, `cloudflare/cloudflared`), Proxmox VM (Ubuntu), Cloudflare Tunnel,
-systemd timer.
+(`actualbudget/actual-server`, `cloudflare/cloudflared`), a Linux VM (Ubuntu) with `DOCKER-USER`
+firewall rules, Cloudflare Tunnel, systemd timer.
 
 ## Global Constraints
 
@@ -507,18 +507,29 @@ git commit -m "ci: gitleaks secret scanning on the public repo"
 
 ## Phase 3 — Deployment (private, maintainer-executed runbook)
 
-These artifacts live in `arcane-stacks` (private) and are applied by the maintainer on the demo VM.
+These artifacts live in `arcane-stacks` (private) and are applied by the maintainer on the host VM.
 They are configuration + verification, not TDD. Reference configs below are complete; adapt
 hostnames/domain to the maintainer's Cloudflare zone.
 
-### Task 3.1: Provision the disposable VM
+> **Hosting revised 2026-07-29.** The demo is deployed as a container stack on an **existing
+> personal Linux VM** in the home lab (shared with an unrelated media stack), not on a VM dedicated
+> to the demo, and that VM has **no Tailscale** — admin is over the local network. See the "Host"
+> and Threat model §1 sections of the spec. The dedicated-VM guarantee is reconstructed at the
+> container/network layer by Task 3.1 below, whose verification step is a **release gate**.
 
-- [ ] **Step 1:** Create an Ubuntu VM in home Proxmox, isolated from LAN devices and all Taiko
-  infra (own VLAN/segment; no route to Home Assistant or production).
-- [ ] **Step 2:** Install Docker + compose plugin. Join **Tailscale**; disable public SSH (admin
-  over Tailscale only). Set UFW default-deny inbound.
-- [ ] **Step 3: Verify** — `tailscale status` shows the VM; `ss -tlnp` shows no public SSH; `docker
-  version` works.
+### Task 3.1: Host prerequisites and network isolation of the stack
+
+- [ ] **Step 1:** On the host VM: Docker + compose plugin installed, UFW default-deny inbound, no
+  public SSH port (admin over the local network).
+- [ ] **Step 2:** Bring up the stack's own Docker network (Task 3.2 creates it) and note its **real
+  subnet** (`docker network inspect`).
+- [ ] **Step 3:** Add explicit `DROP` rules for that subnet towards the local network in the host's
+  `DOCKER-USER` iptables chain — the extension point Docker honours and does not overwrite — and
+  persist them across reboots. Exact subnets are private infra detail and live in `arcane-stacks`.
+- [ ] **Step 4: Verify (RELEASE GATE)** — a reachability probe from inside the demo container to a
+  local-network host **must fail** (e.g. `docker compose exec actual ping <lan-host>`), while egress to
+  the internet still works (`cloudflared` connects). Do not proceed to Task 3.3 until this passes.
+- [ ] **Step 5: Verify** — `ss -tlnp` shows no public SSH; `docker version` works.
 
 ### Task 3.2: actual-server + cloudflared compose (hardened)
 
@@ -571,7 +582,7 @@ networks: { internal: { internal: false } }
 
 ### Task 3.3: Bootstrap the demo budget and record the Sync ID
 
-- [ ] **Step 1:** From a trusted machine (over Tailscale or via the public URL), run the public
+- [ ] **Step 1:** From a trusted machine, via the public URL, run the public
   script against the demo server:
   `ACTUAL_SERVER_URL=https://actual-demo.<domain> ACTUAL_SERVER_PASSWORD=<demo-pass> npm run demo:bootstrap`
 - [ ] **Step 2:** Record the printed `SYNC_ID=…` into the private reviewer-credential note in
@@ -604,7 +615,10 @@ networks: { internal: { internal: false } }
 
 ### Task 4.2: Security acceptance checklist (from the spec)
 
-- [ ] VM isolated; admin over Tailscale; UFW default-deny; only egress is the tunnel.
+- [ ] **Container cannot reach the local network** (`DOCKER-USER` DROP rules in place and the probe
+  of Task 3.1 Step 4 fails) — the release gate that replaces the dedicated-VM boundary.
+- [ ] Admin over the local network, no public SSH; UFW default-deny; only ingress is the tunnel.
+- [ ] Stack on its own Docker network, not attached to any other stack on the VM.
 - [ ] Container: non-root, `cap_drop: ALL`, `no-new-privileges`, read-only rootfs, no `docker.sock`,
   resource limits, volume quota.
 - [ ] Cloudflare rate-limiting + WAF active on the hostname; `header` auth disabled.
@@ -618,7 +632,8 @@ networks: { internal: { internal: false } }
 
 ## Self-Review
 
-**Spec coverage:** VM+Cloudflare Tunnel architecture (3.1–3.2), dedicated tunnel / no-HA / no
+**Spec coverage:** container/network isolation + Cloudflare Tunnel architecture (3.1–3.2),
+dedicated tunnel / no-HA / no
 port conflict (3.2), seed covering all tools (1.1, 2.1), stable-Sync-ID reset (2.4), daily timer
 (3.4), public/private split (Phases 1–2 vs 3), reviewer credentials (3.3, 4.1), threat model &
 dev protocols (2.2, 2.5, 4.2), and the five open questions (Phase 0) each map to a task.

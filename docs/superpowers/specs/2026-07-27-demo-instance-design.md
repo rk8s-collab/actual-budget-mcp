@@ -13,9 +13,9 @@ is a *local* MCP server that talks to a self-hosted Actual Budget instance, so t
 nothing to connect to unless we provide one: an internet-reachable Actual server, pre-populated
 with realistic fake data, whose credentials we hand over in the submission.
 
-This spec covers standing up that **demo instance** on an **isolated, disposable VM** (in the
-maintainer's home Proxmox), exposed through a **Cloudflare Tunnel** — no open ports, no home IP
-exposure, and Cloudflare terminates TLS and provides the rate limiting Actual itself lacks. It
+This spec covers standing up that **demo instance** as an **isolated, disposable container** on a
+Linux VM in the maintainer's home lab, exposed through a **Cloudflare Tunnel** — no open ports, no
+home IP exposure, and Cloudflare terminates TLS and provides the rate limiting Actual itself lacks. It
 also covers a versioned seed that fills a single budget with data exercising all 29 tools, and a
 reset that returns it to a clean state daily without changing the budget's Sync ID.
 
@@ -38,9 +38,9 @@ Sources:
 
 ### Goals
 
-- A publicly reachable HTTPS Actual server, running on an **isolated disposable VM** so a
-  compromise cannot reach any valuable asset (household data, Taiko client hosting, or the
-  critical infra host).
+- A publicly reachable HTTPS Actual server, running as an **isolated disposable container** whose
+  network reach is cut off at the host, so a compromise cannot reach any valuable asset (household
+  data, client hosting, or the critical infra host).
 - A **versioned, reproducible seed** that populates a single budget with realistic fake data
   (English, neutral currency) covering every tool the extension exposes.
 - A **daily reset** that wipes and re-seeds the budget's contents while keeping its **Sync ID
@@ -59,16 +59,24 @@ Sources:
 - **OAuth.** Actual authenticates with a server password, already supported by the extension.
   The directory's OAuth requirement applies to authenticated *remote* services; a local
   extension with a user-supplied server password is out of that scope.
-- **Co-hosting with any valuable asset.** Explicitly rejected: not on the Plesk servers (they
-  host Taiko client sites) and not on the critical-infra VPS (monitoring, mesh network). A
-  password-shared, publicly-writable service must not share a kernel with those.
+- **Co-hosting with any valuable or third-party asset.** Explicitly rejected: not on the shared
+  hosting servers (they serve client sites) and not on the critical-infra VPS (monitoring, mesh
+  network). A password-shared, publicly-writable service must not share a kernel with those. It
+  does share a host with unrelated *personal* services — see "Host" below for why, and for the
+  container- and network-level isolation that compensates.
 
 ## Architecture
 
-- **Host:** a dedicated, disposable Linux VM in the maintainer's home Proxmox, isolated from the
-  home LAN's valuable devices and from all Taiko infrastructure. Rebuildable from scratch.
-- **Exposure:** a **dedicated Cloudflare Tunnel** (`cloudflared`, outbound-only) running **inside
-  the VM**, with its **own tunnel credentials** — **not** the Home Assistant tunnel. It publishes
+- **Host:** a hardened, disposable **container stack** on a Linux VM in the maintainer's home lab.
+  The original design called for a VM dedicated to the demo and nothing else; it was consolidated
+  onto an existing personal VM (which also runs an unrelated media stack) rather than maintaining a
+  second VM for one container. This is a **deliberate trade-off**: the blast radius of a container
+  escape is no longer "an empty disposable VM" but that VM's other services. It is compensated by
+  moving the isolation from the VM boundary to the **container and network boundary** (see Threat
+  model §1), not by dropping it. The stack stays rebuildable from scratch, and nothing valuable to
+  third parties runs on that host.
+- **Exposure:** a **dedicated Cloudflare Tunnel** (`cloudflared`, outbound-only) running **in the
+  same stack**, with its **own tunnel credentials** — **not** the Home Assistant tunnel. It publishes
   a **new** HTTPS hostname (for example `actual-demo.<maintainer-domain>`), distinct from the
   hostname production already uses. The Cloudflare **zone (domain) is reused**; the tunnel and its
   credentials are not. No inbound ports are opened on the home router and the home IP is never
@@ -77,8 +85,8 @@ Sources:
   the login — the layer Actual does not have natively. Actual's `ACTUAL_TRUSTED_PROXIES` is set
   so the app sees the real client IP through the tunnel.
 - **Container:** `actualbudget/actual-server` pinned **by digest** (not `latest`, not just a
-  tag), on its own Docker network inside the VM. Actual's port (5006) is reachable only by the
-  `cloudflared` container, never published on the VM host.
+  tag), on its **own Docker network**, not attached to any other stack on the VM. Actual's port
+  (5006) is reachable only by the `cloudflared` container, never published on the VM host.
 - **Persistence:** a named volume holds Actual's `/data` (budgets and files) so a restart keeps
   the demo budget and its Sync ID. A disk quota bounds it.
 - **Auth:** `ACTUAL_ALLOWED_LOGIN_METHODS` restricted to `password`; a demo-only password (see
@@ -89,9 +97,9 @@ Sources:
 A production Actual instance is already exposed through the Home Assistant Cloudflare Tunnel. The
 demo does not conflict with it because they are separated on every plane:
 
-- **Separate host.** Production runs on its existing host; the demo runs on its own VM. Port 5006
-  is per-host, so the two never see each other.
-- **Port not published.** In the VM, Actual's 5006 exists only on the internal Docker network,
+- **Separate host.** Production runs on its existing host; the demo runs on a different one. Port
+  5006 is per-host, so the two never see each other.
+- **Port not published.** Actual's 5006 exists only on the stack's internal Docker network,
   reachable by `cloudflared` alone — never bound on the VM host or the home LAN, so it cannot
   clash with anything.
 - **Separate tunnel and hostname.** The demo uses a new tunnel with its own credentials and a new
@@ -100,8 +108,8 @@ demo does not conflict with it because they are separated on every plane:
 - **Separate server and data.** The demo is an independent Actual instance and budget with its own
   Sync ID; it shares nothing with the production budget.
 
-Were the demo ever forced onto the same host (it is not, by design), the fix would be remapping
-its published port — unnecessary here because 5006 stays internal to the VM's Docker network.
+Were the demo ever forced onto the same host as production (it is not, by design), the fix would be
+remapping its published port — unnecessary here because 5006 stays internal to the stack's network.
 
 ## Threat model & security (acceptance criteria)
 
@@ -111,9 +119,16 @@ own security model is a **single shared password with no rate limiting and no ho
 isolation** — so defense lives in the layers around it. These are acceptance criteria for the
 implementation plan, in priority order.
 
-**1. Host isolation (highest priority).**
-- Dedicated disposable VM; nothing valuable on it or reachable from it.
-- Admin access to the VM over **Tailscale**, not a public SSH port.
+**1. Host & network isolation (highest priority).**
+Because the demo shares a VM with unrelated personal services (see "Host"), this is where the
+dedicated-VM guarantee is reconstructed. It is the load-bearing control of the whole design.
+- The demo container has **no route to the local network**, enforced by explicit `DROP` rules in
+  the host's `DOCKER-USER` iptables chain (the extension point Docker honours and does not
+  overwrite). Its only permitted egress is the internet, which is all `cloudflared` needs.
+- **Verified, not assumed:** before the demo is declared operational, a reachability probe from
+  inside the container to a local-network host must **fail**. This is a release gate.
+- Its own Docker network, not attached to any other stack on the VM.
+- Admin access to the VM over the local network; **no public SSH port**.
 - VM firewall default-deny inbound; the only ingress path is the outbound Cloudflare Tunnel.
 
 **2. Container hardening.**
@@ -233,5 +248,6 @@ tests (and reviewers) leave behind.
   and sees populated data across read and write tools.
 - After a reset, the Sync ID is unchanged and the data matches the seed baseline.
 - The Actual port is not reachable except through the tunnel; the home IP is not exposed; SSH is
-  not publicly reachable (Tailscale only).
+  not publicly reachable.
+- The demo container cannot reach the local network (probe from inside the container fails).
 - `gitleaks` finds no secrets in the public repo; the seed contains no PII.
