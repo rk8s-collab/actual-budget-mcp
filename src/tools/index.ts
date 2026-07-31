@@ -27,5 +27,7 @@ import { tool as getAccountTransferPayee } from './get_account_transfer_payee.js
 import { tool as setTransactionTransfer } from './set_transaction_transfer.js';
 import { tool as getRules } from './get_rules.js';
 import { tool as deleteRule } from './delete_rule.js';
+import { tool as createRule } from './create_rule.js';
+import { tool as updateRule } from './update_rule.js';
 
-export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction, categorizeTransactions, splitTransaction, createTransaction, createSchedule, setBudget, transferBudget, updateCategoryNote, createCategoryGroup, updateCategoryGroup, createCategory, updateCategory, deleteCategory, deleteCategoryGroup, getPayees, getAccountTransferPayee, setTransactionTransfer, getRules, deleteRule];
+export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction, categorizeTransactions, splitTransaction, createTransaction, createSchedule, setBudget, transferBudget, updateCategoryNote, createCategoryGroup, updateCategoryGroup, createCategory, updateCategory, deleteCategory, deleteCategoryGroup, getPayees, getAccountTransferPayee, setTransactionTransfer, getRules, deleteRule, createRule, updateRule];

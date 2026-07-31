@@ -28,11 +28,11 @@ describe('collectTools', () => {
 });
 
 describe('catalog (plan 5)', () => {
-  it('ships 11 read + 16 write tools, write-gated', () => {
-    expect(allTools).toHaveLength(27);
+  it('ships 11 read + 18 write tools, write-gated', () => {
+    expect(allTools).toHaveLength(29);
     expect(allTools.filter((t) => t.readOnly)).toHaveLength(11);
     expect(collectTools(allTools, false, messagesFor('es'))).toHaveLength(11);
-    expect(collectTools(allTools, true, messagesFor('es'))).toHaveLength(27);
+    expect(collectTools(allTools, true, messagesFor('es'))).toHaveLength(29);
     expect(collectTools(allTools, false, messagesFor('es')).every((t) => t.readOnly)).toBe(true);
   });
   it('registra las tools de escritura en el catálogo', () => {
@@ -51,6 +51,13 @@ describe('catalog (plan 5)', () => {
     expect(allTools.map((t) => t.name)).toContain('delete_category_group');
     expect(allTools.map((t) => t.name)).toContain('delete_category');
     expect(allTools.map((t) => t.name)).toContain('set_transaction_transfer');
+  });
+});
+
+describe('catalogue size', () => {
+  it('exposes 11 read tools always and 29 in total with writes enabled', () => {
+    expect(allTools).toHaveLength(29);
+    expect(allTools.filter((t) => t.readOnly)).toHaveLength(11);
   });
 });
 

@@ -114,6 +114,8 @@
     { "name": "get_account_transfer_payee", "description": "The payee representing an account in transfers" },
     { "name": "set_transaction_transfer", "description": "Turn a transaction into a transfer with another account" },
     { "name": "get_rules", "description": "List Actual automation rules" },
-    { "name": "delete_rule", "description": "Delete an automation rule" }
+    { "name": "delete_rule", "description": "Delete an automation rule" },
+    { "name": "create_rule", "description": "Create an automation rule" },
+    { "name": "update_rule", "description": "Replace an automation rule (full object)" }
   ]
 }
