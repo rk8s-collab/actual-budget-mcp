@@ -17,6 +17,16 @@ export function chainableQ() {
 }
 
 export function mockApi(overrides: Record<string, unknown> = {}) {
+  // Wrap override functions in vi.fn() to preserve spying capability
+  const wrappedOverrides: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(overrides)) {
+    if (typeof value === 'function') {
+      wrappedOverrides[key] = vi.fn(value as any);
+    } else {
+      wrappedOverrides[key] = value;
+    }
+  }
+
   return {
     getAccounts: vi.fn(async () => []),
     getCategories: vi.fn(async () => []),
@@ -36,6 +46,8 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     batchBudgetUpdates: vi.fn(async (fn: () => Promise<void>) => { await fn(); }),
     updateNote: vi.fn(async () => undefined),
     sync: vi.fn(async () => undefined),
-    ...overrides,
+    createCategoryGroup: vi.fn(async () => 'new-group-id'),
+    updateCategoryGroup: vi.fn(async () => undefined),
+    ...wrappedOverrides,
   };
 }

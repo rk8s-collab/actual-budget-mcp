@@ -103,6 +103,8 @@
     { "name": "create_schedule", "description": "Create a recurring or one-off scheduled transaction" },
     { "name": "set_budget", "description": "Assign budget amounts to categories, single or bulk" },
     { "name": "transfer_budget", "description": "Reallocate a budgeted amount between categories (envelope budgeting); moves no funds and makes no payment" },
-    { "name": "update_category_note", "description": "Write a category note (goal templates)" }
+    { "name": "update_category_note", "description": "Write a category note (goal templates)" },
+    { "name": "create_category_group", "description": "Create a category group" },
+    { "name": "update_category_group", "description": "Rename or archive a category group" }
   ]
 }

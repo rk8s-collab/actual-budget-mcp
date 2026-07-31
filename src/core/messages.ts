@@ -33,6 +33,7 @@ const es = {
   mustBeUuid: 'Debe ser un UUID (usa get_accounts / get_categories / get_transactions para obtenerlos)',
   invalidToolName: (name: string) => `Nombre de tool inválido: ${name}`,
   noFieldToUpdate: 'Debes indicar al menos un campo a actualizar (category_id, payee_name, notes, date, amount, cleared)',
+  noGroupFieldToUpdate: 'Debes indicar al menos un campo a actualizar (name, hidden)',
   scheduleDateXorRecurrence: 'Indica exactamente uno: date (puntual) o recurrence (recurrente)',
   transferCategoriesMustDiffer: 'Las categorías de origen y destino deben ser distintas',
   spendingRangeTooLong: 'El rango de fechas no puede superar los 5 años; acorta start_date/end_date.',
@@ -45,6 +46,7 @@ const es = {
 
   // --- No encontrado ---
   categoryNotFound: (id: string) => `categoría inexistente: ${id} (usa get_categories para ver los ids válidos)`,
+  categoryGroupNotFound: (id: string) => `grupo de categorías inexistente: ${id} (usa get_categories para ver los ids válidos)`,
   txNotFound: (id: string) => `Transacción no encontrada: ${id}`,
   txNotFoundItem: 'transacción no encontrada',
   payeeNotFound: (name: string, options: string[]) =>
@@ -104,6 +106,7 @@ const en: Messages = {
   mustBeUuid: 'Must be a UUID (use get_accounts / get_categories / get_transactions to obtain them)',
   invalidToolName: (name: string) => `Invalid tool name: ${name}`,
   noFieldToUpdate: 'You must specify at least one field to update (category_id, payee_name, notes, date, amount, cleared)',
+  noGroupFieldToUpdate: 'You must specify at least one field to update (name, hidden)',
   scheduleDateXorRecurrence: 'Specify exactly one: date (one-off) or recurrence (recurring)',
   transferCategoriesMustDiffer: 'Source and destination categories must be different',
   spendingRangeTooLong: 'The date range cannot exceed 5 years; shorten start_date/end_date.',
@@ -116,6 +119,7 @@ const en: Messages = {
 
   // --- No encontrado ---
   categoryNotFound: (id: string) => `unknown category: ${id} (use get_categories to list valid ids)`,
+  categoryGroupNotFound: (id: string) => `unknown category group: ${id} (use get_categories to list valid ids)`,
   txNotFound: (id: string) => `Transaction not found: ${id}`,
   txNotFoundItem: 'transaction not found',
   payeeNotFound: (name: string, options: string[]) =>
