@@ -45,6 +45,9 @@ const es = {
     `Las partes difieren del total: suman ${sum} y el movimiento es ${total} (${missing ? 'faltan' : 'sobran'} ${diff}). Ajusta las partes o usa adjust_last=true`,
   createSplitsMismatch: (sum: string, total: string) =>
     `Las partes difieren del total: suman ${sum} y el importe es ${total}`,
+  unknownRuleField: 'Campo de regla desconocido (usa get_rules para ver ejemplos de reglas existentes)',
+  unknownRuleOp: 'Operador de regla desconocido (usa get_rules para ver ejemplos de reglas existentes)',
+  unknownRuleStage: "stage debe ser 'pre', 'post' o null (null = la etapa por defecto)",
 
   // --- No encontrado ---
   categoryNotFound: (id: string) => `categoría inexistente: ${id} (usa get_categories para ver los ids válidos)`,
@@ -143,6 +146,9 @@ const en: Messages = {
     `The parts differ from the total: they add up to ${sum} and the transaction is ${total} (${missing ? 'missing' : 'extra'} ${diff}). Adjust the parts or use adjust_last=true`,
   createSplitsMismatch: (sum: string, total: string) =>
     `The parts differ from the total: they add up to ${sum} and the amount is ${total}`,
+  unknownRuleField: 'Unknown rule field (use get_rules to see examples of existing rules)',
+  unknownRuleOp: 'Unknown rule operator (use get_rules to see examples of existing rules)',
+  unknownRuleStage: "stage must be 'pre', 'post' or null (null = the default stage)",
 
   // --- No encontrado ---
   categoryNotFound: (id: string) => `unknown category: ${id} (use get_categories to list valid ids)`,

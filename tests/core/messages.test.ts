@@ -124,7 +124,7 @@ describe('mensajes de esquema', () => {
     const archivos = readdirSync(dirTools)
       .filter((f) => f.endsWith('.ts') && f !== 'index.ts')
       .map((f) => path.join(dirTools, f))
-      .concat(path.join(raiz, 'src', 'core', 'types.ts'));
+      .concat(path.join(raiz, 'src', 'core', 'types.ts'), path.join(raiz, 'src', 'core', 'rule-schema.ts'));
 
     const problemas: string[] = [];
     for (const archivo of archivos) {
