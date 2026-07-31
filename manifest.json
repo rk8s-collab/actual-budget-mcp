@@ -112,6 +112,8 @@
     { "name": "delete_category", "description": "Delete a category, reassigning its transactions (guarded)" },
     { "name": "get_payees", "description": "List payees, optionally only transfer payees" },
     { "name": "get_account_transfer_payee", "description": "The payee representing an account in transfers" },
-    { "name": "set_transaction_transfer", "description": "Turn a transaction into a transfer with another account" }
+    { "name": "set_transaction_transfer", "description": "Turn a transaction into a transfer with another account" },
+    { "name": "get_rules", "description": "List Actual automation rules" },
+    { "name": "delete_rule", "description": "Delete an automation rule" }
   ]
 }

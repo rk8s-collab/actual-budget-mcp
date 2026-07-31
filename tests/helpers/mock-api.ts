@@ -52,6 +52,10 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     updateCategory: vi.fn(async () => undefined),
     deleteCategory: vi.fn(async () => undefined),
     deleteCategoryGroup: vi.fn(async () => undefined),
+    getRules: vi.fn(async () => []),
+    createRule: vi.fn(async (rule: any) => ({ id: 'new-rule-id', ...rule })),
+    updateRule: vi.fn(async (rule: any) => rule),
+    deleteRule: vi.fn(async () => true),
     ...wrappedOverrides,
   };
 }

@@ -63,6 +63,7 @@ const es = {
     'con get_accounts, y si la cuenta existe, ábrela una vez en Actual para que se genere',
   transferSourceNotFound: (month: string, id: string) => `Categoría origen no encontrada en ${month}: ${id}`,
   transferTargetNotFound: (month: string, id: string) => `Categoría destino no encontrada en ${month}: ${id}`,
+  ruleNotFound: (id: string) => `regla inexistente: ${id} (usa get_rules para ver los ids válidos)`,
 
   // --- Guardas de estado y consistencia de escritura ---
   cannotSplitTransfer: 'No se puede dividir una transferencia entre cuentas',
@@ -105,6 +106,7 @@ const es = {
   cannotTransferSplitParent: (id: string) =>
     `La transacción ${id} es el padre de un split y Actual no puede convertirla en transferencia: convierte sus ` +
     'partes por separado o deshaz el split primero',
+  ruleDeleteRejected: (id: string) => `Actual rechazó el borrado de la regla ${id}; vuelve a consultarla con get_rules`,
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>
@@ -164,6 +166,7 @@ const en: Messages = {
     'get_accounts, and if the account exists, open it once in Actual so the payee is generated',
   transferSourceNotFound: (month: string, id: string) => `Source category not found in ${month}: ${id}`,
   transferTargetNotFound: (month: string, id: string) => `Target category not found in ${month}: ${id}`,
+  ruleNotFound: (id: string) => `unknown rule: ${id} (use get_rules to list valid ids)`,
 
   // --- Guardas de estado y consistencia de escritura ---
   cannotSplitTransfer: 'Cannot split a transfer between accounts',
@@ -206,6 +209,7 @@ const en: Messages = {
   cannotTransferSplitParent: (id: string) =>
     `Transaction ${id} is the parent of a split and Actual cannot turn it into a transfer: convert its parts ` +
     'individually or undo the split first',
+  ruleDeleteRejected: (id: string) => `Actual refused to delete rule ${id}; query it again with get_rules`,
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>
