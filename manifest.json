@@ -71,7 +71,7 @@
     "enable_write": {
       "type": "boolean",
       "title": "Enable write tools",
-      "description": "Off: 8 read-only tools. On: 14 more that can edit transactions, splits, budgets, categories and notes. Your MCP client asks for approval before each call unless you grant it standing permission.",
+      "description": "Off: 8 read-only tools. On: 15 more that can edit transactions, splits, budgets, categories and notes. Your MCP client asks for approval before each call unless you grant it standing permission.",
       "required": false,
       "default": false
     },
@@ -111,6 +111,7 @@
     { "name": "delete_category_group", "description": "Delete a category group and its categories (guarded)" },
     { "name": "delete_category", "description": "Delete a category, reassigning its transactions (guarded)" },
     { "name": "get_payees", "description": "List payees, optionally only transfer payees" },
-    { "name": "get_account_transfer_payee", "description": "The payee representing an account in transfers" }
+    { "name": "get_account_transfer_payee", "description": "The payee representing an account in transfers" },
+    { "name": "set_transaction_transfer", "description": "Turn a transaction into a transfer with another account" }
   ]
 }

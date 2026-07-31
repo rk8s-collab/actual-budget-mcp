@@ -96,6 +96,10 @@ const es = {
     `Las categorías del grupo "${name}" tienen ${txCount} transacciones. Indica transfer_category_id con la ` +
     'categoría (de OTRO grupo) a la que reasignarlas; si se borra sin destino, esas transacciones quedan sin categoría',
   cannotReassignToSelf: 'transfer_category_id no puede ser una de las categorías que se están borrando',
+  transferSameAccount: 'La cuenta de destino debe ser distinta de la cuenta de la transacción',
+  cannotTransferSplitParent: (id: string) =>
+    `La transacción ${id} es el padre de un split y Actual no puede convertirla en transferencia: convierte sus ` +
+    'partes por separado o deshaz el split primero',
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>
@@ -188,6 +192,10 @@ const en: Messages = {
     `The categories in group "${name}" have ${txCount} transactions. Pass transfer_category_id with the category ` +
     '(from ANOTHER group) to reassign them to; deleting without a destination leaves those transactions uncategorized',
   cannotReassignToSelf: 'transfer_category_id cannot be one of the categories being deleted',
+  transferSameAccount: 'The destination account must be different from the account of the transaction',
+  cannotTransferSplitParent: (id: string) =>
+    `Transaction ${id} is the parent of a split and Actual cannot turn it into a transfer: convert its parts ` +
+    'individually or undo the split first',
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>

@@ -28,11 +28,11 @@ describe('collectTools', () => {
 });
 
 describe('catalog (plan 5)', () => {
-  it('ships 10 read + 14 write tools, write-gated', () => {
-    expect(allTools).toHaveLength(24);
+  it('ships 10 read + 15 write tools, write-gated', () => {
+    expect(allTools).toHaveLength(25);
     expect(allTools.filter((t) => t.readOnly)).toHaveLength(10);
     expect(collectTools(allTools, false, messagesFor('es'))).toHaveLength(10);
-    expect(collectTools(allTools, true, messagesFor('es'))).toHaveLength(24);
+    expect(collectTools(allTools, true, messagesFor('es'))).toHaveLength(25);
     expect(collectTools(allTools, false, messagesFor('es')).every((t) => t.readOnly)).toBe(true);
   });
   it('registra las tools de escritura en el catálogo', () => {
@@ -50,6 +50,7 @@ describe('catalog (plan 5)', () => {
     expect(allTools.map((t) => t.name)).toContain('update_category');
     expect(allTools.map((t) => t.name)).toContain('delete_category_group');
     expect(allTools.map((t) => t.name)).toContain('delete_category');
+    expect(allTools.map((t) => t.name)).toContain('set_transaction_transfer');
   });
 });
 
