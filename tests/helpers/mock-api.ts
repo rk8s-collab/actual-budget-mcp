@@ -35,6 +35,7 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     setBudgetCarryover: vi.fn(async () => undefined),
     batchBudgetUpdates: vi.fn(async (fn: () => Promise<void>) => { await fn(); }),
     updateNote: vi.fn(async () => undefined),
+    sync: vi.fn(async () => undefined),
     ...overrides,
   };
 }

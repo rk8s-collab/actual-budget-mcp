@@ -72,6 +72,9 @@ const es = {
   transferRollbackFailed: (cause: string, rollbackCause: string, categoryName: string) =>
     `No se pudo abonar en destino (${cause}) y ADEMÁS falló la reversión del origen (${rollbackCause}); revisa ${categoryName} en Actual`,
   unconfirmedWrites: 'Se enviaron pero no se pudieron confirmar releyendo; vuelve a consultar esas transacciones antes de darlas por categorizadas',
+  syncPending: (cause: string) =>
+    `El cambio se guardó en la copia local pero no se pudo sincronizar con el servidor (${cause}); ` +
+    'se reintentará en la siguiente consulta. Si el error persiste, revisa la conexión con Actual',
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>
@@ -140,6 +143,9 @@ const en: Messages = {
   transferRollbackFailed: (cause: string, rollbackCause: string, categoryName: string) =>
     `Could not credit the target (${cause}) and the source rollback ALSO failed (${rollbackCause}); check ${categoryName} in Actual`,
   unconfirmedWrites: 'They were sent but could not be confirmed by re-reading; query those transactions again before considering them categorized',
+  syncPending: (cause: string) =>
+    `The change was saved to the local copy but could not be synced to the server (${cause}); ` +
+    'it will be retried on the next query. If the error persists, check the connection to Actual',
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>
