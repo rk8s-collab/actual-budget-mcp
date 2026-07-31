@@ -71,7 +71,7 @@
     "enable_write": {
       "type": "boolean",
       "title": "Enable write tools",
-      "description": "Off: 8 read-only tools. On: 8 more that can edit transactions, splits, budgets and notes. Your MCP client asks for approval before each call unless you grant it standing permission.",
+      "description": "Off: 8 read-only tools. On: 14 more that can edit transactions, splits, budgets, categories and notes. Your MCP client asks for approval before each call unless you grant it standing permission.",
       "required": false,
       "default": false
     },
@@ -107,6 +107,8 @@
     { "name": "create_category_group", "description": "Create a category group" },
     { "name": "update_category_group", "description": "Rename or archive a category group" },
     { "name": "create_category", "description": "Create a category inside a group" },
-    { "name": "update_category", "description": "Rename, move or archive a category" }
+    { "name": "update_category", "description": "Rename, move or archive a category" },
+    { "name": "delete_category_group", "description": "Delete a category group and its categories (guarded)" },
+    { "name": "delete_category", "description": "Delete a category, reassigning its transactions (guarded)" }
   ]
 }

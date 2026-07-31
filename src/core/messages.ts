@@ -78,6 +78,20 @@ const es = {
   syncPending: (cause: string) =>
     `El cambio se guardó en la copia local pero no se pudo sincronizar con el servidor (${cause}); ` +
     'se reintentará en la siguiente consulta. Si el error persiste, revisa la conexión con Actual',
+  deleteCategoryNeedsConfirmation: (name: string) =>
+    `Borrar la categoría "${name}" es irreversible. Vuelve a llamar con confirm_delete: true si estás seguro, ` +
+    'o archívala sin perder nada con update_category(hidden: true)',
+  deleteGroupNeedsConfirmation: (name: string, categoryCount: number) =>
+    `Borrar el grupo "${name}" es irreversible y se lleva por delante sus ${categoryCount} categorías. ` +
+    'Vuelve a llamar con confirm_delete: true si estás seguro, o archívalo sin perder nada con ' +
+    'update_category_group(hidden: true)',
+  deleteCategoryNeedsTarget: (name: string, txCount: number) =>
+    `La categoría "${name}" tiene ${txCount} transacciones. Indica transfer_category_id con la categoría a la que ` +
+    'reasignarlas; si se borra sin destino, esas transacciones quedan sin categoría',
+  deleteGroupNeedsTarget: (name: string, txCount: number) =>
+    `Las categorías del grupo "${name}" tienen ${txCount} transacciones. Indica transfer_category_id con la ` +
+    'categoría (de OTRO grupo) a la que reasignarlas; si se borra sin destino, esas transacciones quedan sin categoría',
+  cannotReassignToSelf: 'transfer_category_id no puede ser una de las categorías que se están borrando',
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>
@@ -152,6 +166,20 @@ const en: Messages = {
   syncPending: (cause: string) =>
     `The change was saved to the local copy but could not be synced to the server (${cause}); ` +
     'it will be retried on the next query. If the error persists, check the connection to Actual',
+  deleteCategoryNeedsConfirmation: (name: string) =>
+    `Deleting the category "${name}" cannot be undone. Call again with confirm_delete: true if you are sure, ` +
+    'or archive it losing nothing with update_category(hidden: true)',
+  deleteGroupNeedsConfirmation: (name: string, categoryCount: number) =>
+    `Deleting the group "${name}" cannot be undone and takes its ${categoryCount} categories with it. ` +
+    'Call again with confirm_delete: true if you are sure, or archive it losing nothing with ' +
+    'update_category_group(hidden: true)',
+  deleteCategoryNeedsTarget: (name: string, txCount: number) =>
+    `The category "${name}" has ${txCount} transactions. Pass transfer_category_id with the category to reassign ` +
+    'them to; deleting without a destination leaves those transactions uncategorized',
+  deleteGroupNeedsTarget: (name: string, txCount: number) =>
+    `The categories in group "${name}" have ${txCount} transactions. Pass transfer_category_id with the category ` +
+    '(from ANOTHER group) to reassign them to; deleting without a destination leaves those transactions uncategorized',
+  cannotReassignToSelf: 'transfer_category_id cannot be one of the categories being deleted',
 
   // --- Infraestructura del presupuesto ---
   budgetClosed: (cause: string, dataDir: string) =>

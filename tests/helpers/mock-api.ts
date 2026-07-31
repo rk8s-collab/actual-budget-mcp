@@ -50,6 +50,8 @@ export function mockApi(overrides: Record<string, unknown> = {}) {
     updateCategoryGroup: vi.fn(async () => undefined),
     createCategory: vi.fn(async () => 'new-category-id'),
     updateCategory: vi.fn(async () => undefined),
+    deleteCategory: vi.fn(async () => undefined),
+    deleteCategoryGroup: vi.fn(async () => undefined),
     ...wrappedOverrides,
   };
 }
