@@ -32,10 +32,11 @@ const es = {
   monthFormat: 'Mes en formato YYYY-MM',
   mustBeUuid: 'Debe ser un UUID (usa get_accounts / get_categories / get_transactions para obtenerlos)',
   invalidToolName: (name: string) => `Nombre de tool inválido: ${name}`,
-  noFieldToUpdate: 'Debes indicar al menos un campo a actualizar (category_id, payee_name, notes, date, amount, cleared)',
+  noFieldToUpdate: 'Debes indicar al menos un campo a actualizar (category_id, payee_id, payee_name, notes, date, amount, cleared)',
   noGroupFieldToUpdate: 'Debes indicar al menos un campo a actualizar (name, hidden)',
   noCategoryFieldToUpdate: 'Debes indicar al menos un campo a actualizar (name, group_id, hidden)',
   scheduleDateXorRecurrence: 'Indica exactamente uno: date (puntual) o recurrence (recurrente)',
+  payeeIdAndNameTogether: 'Indica payee_id o payee_name, no ambos',
   transferCategoriesMustDiffer: 'Las categorías de origen y destino deben ser distintas',
   spendingRangeTooLong: 'El rango de fechas no puede superar los 5 años; acorta start_date/end_date.',
   emptyNoteRequiresClear: (name: string) =>
@@ -52,6 +53,7 @@ const es = {
   txNotFoundItem: 'transacción no encontrada',
   payeeNotFound: (name: string, options: string[]) =>
     `Pagador no encontrado: "${name}"${options.length ? ` — ¿quizá: ${options.join(', ')}?` : ''}`,
+  payeeIdNotFound: (id: string) => `pagador inexistente: ${id} (usa get_payees para ver los ids válidos)`,
   accountNotFound: (id: string) => `cuenta inexistente: ${id} (usa get_accounts para ver los ids válidos)`,
   transferPayeeNotFound: (accountId: string) =>
     `La cuenta ${accountId} no tiene pagador de transferencia. Actual lo crea con la cuenta: comprueba el id ` +
@@ -128,10 +130,11 @@ const en: Messages = {
   monthFormat: 'Month in YYYY-MM format',
   mustBeUuid: 'Must be a UUID (use get_accounts / get_categories / get_transactions to obtain them)',
   invalidToolName: (name: string) => `Invalid tool name: ${name}`,
-  noFieldToUpdate: 'You must specify at least one field to update (category_id, payee_name, notes, date, amount, cleared)',
+  noFieldToUpdate: 'You must specify at least one field to update (category_id, payee_id, payee_name, notes, date, amount, cleared)',
   noGroupFieldToUpdate: 'You must specify at least one field to update (name, hidden)',
   noCategoryFieldToUpdate: 'You must specify at least one field to update (name, group_id, hidden)',
   scheduleDateXorRecurrence: 'Specify exactly one: date (one-off) or recurrence (recurring)',
+  payeeIdAndNameTogether: 'Specify payee_id or payee_name, not both',
   transferCategoriesMustDiffer: 'Source and destination categories must be different',
   spendingRangeTooLong: 'The date range cannot exceed 5 years; shorten start_date/end_date.',
   emptyNoteRequiresClear: (name: string) =>
@@ -148,6 +151,7 @@ const en: Messages = {
   txNotFoundItem: 'transaction not found',
   payeeNotFound: (name: string, options: string[]) =>
     `Payee not found: "${name}"${options.length ? ` — maybe: ${options.join(', ')}?` : ''}`,
+  payeeIdNotFound: (id: string) => `unknown payee: ${id} (use get_payees to list valid ids)`,
   accountNotFound: (id: string) => `unknown account: ${id} (use get_accounts to list valid ids)`,
   transferPayeeNotFound: (accountId: string) =>
     `Account ${accountId} has no transfer payee. Actual creates one with the account: check the id with ` +

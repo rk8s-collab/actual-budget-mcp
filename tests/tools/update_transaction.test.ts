@@ -134,3 +134,54 @@ describe('update_transaction', () => {
     )).rejects.toThrow(/not found/i);
   });
 });
+
+describe('update_transaction — clearing the category and setting the payee by id', () => {
+  const T1 = '11111111-1111-4111-8111-111111111111';
+  const P1 = '77777777-7777-4777-8777-777777777777';
+  const row = { id: T1, account: 'acc', date: '2026-05-01', amount: -1000, category: 'c-old', payee: 'p-old' };
+
+  it('clears the category with an explicit null', async () => {
+    const api = mockApi({ runQuery: async () => ({ data: [{ ...row, category: null }] }) });
+    await tool.handler({ transaction_id: T1, category_id: null }, { api, config: testConfig });
+    expect(api.updateTransaction).toHaveBeenCalledWith(T1, { category: null });
+    // A null category must NOT be validated against the category index: there is
+    // nothing to look up, and doing so would reject the clear.
+    expect(api.getCategoryGroups).not.toHaveBeenCalled();
+  });
+
+  it('still treats an absent category_id as "leave it alone"', async () => {
+    const api = mockApi({ runQuery: async () => ({ data: [{ ...row, notes: 'x' }] }) });
+    await tool.handler({ transaction_id: T1, notes: 'x' }, { api, config: testConfig });
+    expect(api.updateTransaction).toHaveBeenCalledWith(T1, { notes: 'x' });
+  });
+
+  it('sets the payee by id', async () => {
+    const api = mockApi({
+      runQuery: async () => ({ data: [{ ...row, payee: P1 }] }),
+      getPayees: async () => [{ id: P1, name: 'Landlord', transfer_acct: null }],
+    });
+    await tool.handler({ transaction_id: T1, payee_id: P1 }, { api, config: testConfig });
+    expect(api.updateTransaction).toHaveBeenCalledWith(T1, { payee: P1 });
+    expect(api.createPayee).not.toHaveBeenCalled();
+  });
+
+  it('rejects an unknown payee id before writing', async () => {
+    const unknown = '99999999-9999-4999-8999-999999999999';
+    const api = mockApi({ runQuery: async () => ({ data: [row] }), getPayees: async () => [] });
+    await expect(tool.handler({ transaction_id: T1, payee_id: unknown }, { api, config: testConfig }))
+      .rejects.toThrow(unknown);
+    expect(api.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('refuses payee_id and payee_name together', async () => {
+    const api = mockApi({ runQuery: async () => ({ data: [row] }) });
+    await expect(tool.handler({ transaction_id: T1, payee_id: P1, payee_name: 'Landlord' }, { api, config: testConfig }))
+      .rejects.toThrow(/payee_id/);
+    expect(api.updateTransaction).not.toHaveBeenCalled();
+  });
+
+  it('still rejects a call with nothing to change', async () => {
+    const api = mockApi({ runQuery: async () => ({ data: [row] }) });
+    await expect(tool.handler({ transaction_id: T1 }, { api, config: testConfig })).rejects.toThrow(/payee_id/);
+  });
+});
