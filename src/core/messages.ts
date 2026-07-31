@@ -52,6 +52,10 @@ const es = {
   txNotFoundItem: 'transacción no encontrada',
   payeeNotFound: (name: string, options: string[]) =>
     `Pagador no encontrado: "${name}"${options.length ? ` — ¿quizá: ${options.join(', ')}?` : ''}`,
+  accountNotFound: (id: string) => `cuenta inexistente: ${id} (usa get_accounts para ver los ids válidos)`,
+  transferPayeeNotFound: (accountId: string) =>
+    `La cuenta ${accountId} no tiene pagador de transferencia. Actual lo crea con la cuenta: comprueba el id ` +
+    'con get_accounts, y si la cuenta existe, ábrela una vez en Actual para que se genere',
   transferSourceNotFound: (month: string, id: string) => `Categoría origen no encontrada en ${month}: ${id}`,
   transferTargetNotFound: (month: string, id: string) => `Categoría destino no encontrada en ${month}: ${id}`,
 
@@ -140,6 +144,10 @@ const en: Messages = {
   txNotFoundItem: 'transaction not found',
   payeeNotFound: (name: string, options: string[]) =>
     `Payee not found: "${name}"${options.length ? ` — maybe: ${options.join(', ')}?` : ''}`,
+  accountNotFound: (id: string) => `unknown account: ${id} (use get_accounts to list valid ids)`,
+  transferPayeeNotFound: (accountId: string) =>
+    `Account ${accountId} has no transfer payee. Actual creates one with the account: check the id with ` +
+    'get_accounts, and if the account exists, open it once in Actual so the payee is generated',
   transferSourceNotFound: (month: string, id: string) => `Source category not found in ${month}: ${id}`,
   transferTargetNotFound: (month: string, id: string) => `Target category not found in ${month}: ${id}`,
 

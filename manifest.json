@@ -109,6 +109,8 @@
     { "name": "create_category", "description": "Create a category inside a group" },
     { "name": "update_category", "description": "Rename, move or archive a category" },
     { "name": "delete_category_group", "description": "Delete a category group and its categories (guarded)" },
-    { "name": "delete_category", "description": "Delete a category, reassigning its transactions (guarded)" }
+    { "name": "delete_category", "description": "Delete a category, reassigning its transactions (guarded)" },
+    { "name": "get_payees", "description": "List payees, optionally only transfer payees" },
+    { "name": "get_account_transfer_payee", "description": "The payee representing an account in transfers" }
   ]
 }

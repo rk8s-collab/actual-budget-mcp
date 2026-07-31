@@ -28,11 +28,11 @@ describe('collectTools', () => {
 });
 
 describe('catalog (plan 5)', () => {
-  it('ships 8 read + 14 write tools, write-gated', () => {
-    expect(allTools).toHaveLength(22);
-    expect(allTools.filter((t) => t.readOnly)).toHaveLength(8);
-    expect(collectTools(allTools, false, messagesFor('es'))).toHaveLength(8);
-    expect(collectTools(allTools, true, messagesFor('es'))).toHaveLength(22);
+  it('ships 10 read + 14 write tools, write-gated', () => {
+    expect(allTools).toHaveLength(24);
+    expect(allTools.filter((t) => t.readOnly)).toHaveLength(10);
+    expect(collectTools(allTools, false, messagesFor('es'))).toHaveLength(10);
+    expect(collectTools(allTools, true, messagesFor('es'))).toHaveLength(24);
     expect(collectTools(allTools, false, messagesFor('es')).every((t) => t.readOnly)).toBe(true);
   });
   it('registra las tools de escritura en el catálogo', () => {
