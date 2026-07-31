@@ -18,5 +18,7 @@ import { tool as transferBudget } from './transfer_budget.js';
 import { tool as updateCategoryNote } from './update_category_note.js';
 import { tool as createCategoryGroup } from './create_category_group.js';
 import { tool as updateCategoryGroup } from './update_category_group.js';
+import { tool as createCategory } from './create_category.js';
+import { tool as updateCategory } from './update_category.js';
 
-export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction, categorizeTransactions, splitTransaction, createTransaction, createSchedule, setBudget, transferBudget, updateCategoryNote, createCategoryGroup, updateCategoryGroup];
+export const allTools: ToolDef[] = [getAccounts, getNetWorth, getCategories, getTransactions, getSpendingSummary, getBudgetMonth, getBudgetAverages, getSchedules, updateTransaction, categorizeTransactions, splitTransaction, createTransaction, createSchedule, setBudget, transferBudget, updateCategoryNote, createCategoryGroup, updateCategoryGroup, createCategory, updateCategory];
