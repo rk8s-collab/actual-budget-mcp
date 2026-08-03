@@ -23,10 +23,37 @@ phase's script drives the tool handlers directly against a live API.
   `create_category_group.ts`, `update_category_group.ts`, `create_category.ts`,
   `update_category.ts`, `delete_category.ts`, or `delete_category_group.ts` needed changing.
 
-## Phase 2 — transfers and payees
+## Phase 2 — transfers and payees (2026-08-03)
 
-Pending. `scripts/verify/phase2-transfers.ts` is written and type-checks clean but has not
-yet been run against a live server.
+`scripts/verify/phase2-transfers.ts` — **26/26 checks passed**, `RESULT={"checks_total":26,"checks_passed":26,"failed":false}`.
+
+Script note: the seeded demo dataset has only 2 on-budget accounts (Checking, Savings) plus
+1 off-budget (Pension) — the script originally required 3 on-budget accounts to pick a
+"third account" for the re-point check. Relaxed to accept the off-budget account as the
+third account when a third on-budget one isn't available; the brief only asked for "a third
+account", not specifically on-budget.
+
+- **Open question 1, answered**: `set_transaction_transfer` really does create and link a
+  counterpart transaction on the target account. Verified: exactly one counterpart row
+  appears on the target account (4b), its amount is the exact negation of the source's (4d),
+  and the link is mutual — `source.transfer_id` points at the counterpart and vice versa
+  (4e) — for both a same-side (on-budget → on-budget) and an opposite-side (on-budget →
+  off-budget) pair.
+- **Category behaviour, answered** (was RECORD-only, not asserted, since either answer would
+  be informative): on the same-side pair both legs come back with `category_id: null`
+  (cleared) — confirmed `true`. On the opposite-side pair the source KEEPS its category
+  (`86e8dc10-...`) and only the counterpart is `null` — confirmed `false` for "cleared on
+  both legs". This matches the plan's "Verified API facts" table exactly: clearing only
+  happens when both accounts are on the same side of the budget.
+- **Re-pointing, answered**: re-pointing an existing transfer to a third account removes the
+  counterpart from the old target account (6b, zero rows) and the new target account ends up
+  with exactly one (6c) — and it is the **same row id**, not a new one (6d:
+  `"reused": true`). Confirms the plan's claim that re-pointing moves the existing
+  counterpart rather than creating a second one.
+- `update_transaction`'s new `category_id: null` and `payee_id` inputs both verified against
+  a re-read of the real transaction (7d, 7g), not just the tool's own echo.
+- No contradictions found; `set_transaction_transfer.ts`'s description did not need
+  correcting, and no other Phase 2 tool needed changes.
 
 ## Phase 3 — rules
 
