@@ -41,11 +41,15 @@ Actual Budget server you can reach. On Intel Macs, Windows or Linux, use
 
 ### Turning on write access
 
-With the checkbox off you get the 8 read-only tools. Turn it on (Settings → Extensions →
-this extension → configure) to add the 8 write tools: editing and categorizing transactions,
-real splits, scheduled transactions, budget assignment and category notes. Claude Desktop
-asks for your approval before each call unless you grant it standing permission, and there
-are no delete tools.
+With the checkbox off you get the 11 read-only tools. Turn it on (Settings → Extensions →
+this extension → configure) to add the 18 write tools: editing and categorizing transactions,
+real splits, scheduled transactions, budget assignment, category notes, managing category
+groups/categories, payees/transfers and automation rules. Claude Desktop asks for your
+approval before each call unless you grant it standing permission. The classification tools
+(categories, category groups, rules) sync to the server after every write, same as the rest;
+the delete tools (`delete_category`, `delete_category_group`, `delete_rule`) require
+`confirm_delete: true` and default to archiving (`hidden: true`) as the non-destructive
+alternative.
 
 ### Updating
 
@@ -132,12 +136,12 @@ The first three variables are required; the rest have defaults.
 | `LOCALE` | No | `en-US` | Locale for formatting amounts and dates (e.g. `es-ES`) |
 | `CURRENCY` | No | `USD` | 3-letter ISO currency code (e.g. `EUR`) |
 | `SYNC_TTL_SECONDS` | No | `60` | Seconds the sync is cached before re-syncing |
-| `ENABLE_WRITE` | No | `false` | Enables the 8 write tools (categorize, splits, schedules, budget, notes) |
+| `ENABLE_WRITE` | No | `false` | Enables the 18 write tools (categorize, splits, schedules, budget, notes, category groups/categories, payees/transfers, rules) |
 | `MESSAGES_LANG` | No | `es` | Language of the server's error messages: `es` or `en` |
 
 ## Tools
 
-### Read tools (8)
+### Read tools (11)
 
 Always available.
 
@@ -146,19 +150,22 @@ Always available.
 | `get_accounts` | Accounts with current balance; includes off-budget accounts (pensions, funds, mortgage) by default |
 | `get_net_worth` | Full net worth: on-budget + off-budget with a per-account breakdown |
 | `get_categories` | Category groups and categories with their IDs (needed by the write tools) |
+| `get_payees` | Payees with their IDs; a payee with `transfer_account_id` set is the payee Actual uses to represent that account in a transfer |
+| `get_account_transfer_payee` | The payee that represents a specific account in a transfer — a shortcut over `get_payees` |
 | `get_transactions` | Transactions by date range with optional filters (account, category, text, amount, uncategorized). Excludes transfers. Paginated (max 200) |
 | `get_spending_summary` | Spending aggregated by category, payee or month. Always excludes transfers |
 | `get_budget_month` | A month's budget state: to-budget, income, totals and budgeted/spent/balance per category |
 | `get_budget_averages` | Mean, median and max spending per category over the last N full months — input for preparing the budget |
 | `get_schedules` | Scheduled/recurring transactions configured in Actual (name, next date, amount) |
+| `get_rules` | Automation rules with their IDs; rules run on imported transactions and are how recurring movements classify themselves |
 
-### Write tools (8)
+### Write tools (18)
 
 Registered only when `ENABLE_WRITE=true`.
 
 | Tool | Description |
 |---|---|
-| `update_transaction` | Fix a transaction (amount, category, payee, notes, date) |
+| `update_transaction` | Fix a transaction (amount, category, payee, notes, date). `category_id: null` uncategorizes it; `payee_id` sets a known payee, `payee_name` resolves/creates one |
 | `categorize_transactions` | Categorize in bulk (max 50), with a per-item result |
 | `split_transaction` | Split a transaction into real parts — replaces the transaction (new id) |
 | `create_transaction` | Record an expense/income, with optional splits at creation |
@@ -167,14 +174,41 @@ Registered only when `ENABLE_WRITE=true`.
 | `transfer_budget` | Move assigned budget between categories |
 | `update_category_note` | Category notes and goal templates |
 
+**Category groups and categories**
+
+| Tool | Description |
+|---|---|
+| `create_category_group` | Create a new category group (the top-level buckets that hold categories) |
+| `update_category_group` | Rename a category group or archive it (`hidden: true`) — the non-destructive alternative to `delete_category_group` |
+| `delete_category_group` | Permanently delete a category group and every category inside it. Requires `confirm_delete: true`; if any of them have transactions, `transfer_category_id` is mandatory |
+| `create_category` | Create a category inside an existing category group |
+| `update_category` | Rename a category, move it to another group, or archive it (`hidden: true`) — the non-destructive alternative to `delete_category` |
+| `delete_category` | Permanently delete a category. Requires `confirm_delete: true`; if it has transactions, `transfer_category_id` is mandatory |
+
+**Payees and transfers**
+
+| Tool | Description |
+|---|---|
+| `set_transaction_transfer` | Turn an ordinary transaction into a transfer with another account, by pointing it at that account's transfer payee. Actual creates and links the matching transaction on the other account |
+
+**Rules**
+
+| Tool | Description |
+|---|---|
+| `create_rule` | Create an automation rule: a condition (e.g. imported_payee contains "X" — use imported_payee, not payee, to match a payee the first time it is ever imported) plus an action (e.g. set category = id). Runs on future imports only, never retroactively. An action that sets payee to a transfer payee does not create a real transfer; follow up with set_transaction_transfer |
+| `update_rule` | Replace an automation rule — Actual's API takes the whole object, so resend every field you want to keep |
+| `delete_rule` | Delete an automation rule. Past transactions keep whatever it already applied; only future imports change |
+
 > **Notes on the write tools**
 > - They only appear when `ENABLE_WRITE=true` is set in the `env` block (restart the client after changing it).
 > - **Input amounts are in currency units** (euros/dollars, not cents); the server handles the conversion.
 > - `split_transaction` **replaces** the original transaction with a new one carrying subtransactions, so the resulting transaction has a **new id**.
+> - The classification tools (categories, category groups and rules) **sync to the server after every write**.
+> - The delete tools (`delete_category`, `delete_category_group`, `delete_rule`) require **`confirm_delete: true`**; archiving (`hidden: true`, via `update_category`/`update_category_group`) is the non-destructive default and keeps history intact.
 
 ## Safety
 
-- **No delete tools** — the server cannot remove transactions, accounts or budgets.
+- **No transaction, account or budget-assignment delete tools** — the server cannot remove those. The only delete tools are `delete_category`, `delete_category_group` and `delete_rule`; each requires `confirm_delete: true`, and archiving (`hidden: true`) is the non-destructive default.
 - **Write disabled by default** — write tools are never registered unless `ENABLE_WRITE=true`.
 - **Split guards** — the write tools guard against editing split parts or split parents directly.
 - Never commit your `.env`. The Actual password lives only in your local `.env` or the client config.
@@ -203,7 +237,7 @@ Full text: [PRIVACY.md](PRIVACY.md) · [en español](PRIVACY.es.md)
 ## Development
 
 ```bash
-npm test        # full suite with Vitest (127 tests)
+npm test        # full suite with Vitest (325 tests)
 npm run dev     # runs src/index.ts with tsx (no build)
 npm run smoke   # manual check against the real Actual server (requires .env; not part of CI)
 ```

@@ -32,11 +32,16 @@ Actual Budget self-hosted al que puedas acceder. En Macs Intel, Windows o Linux,
 
 ### Activar el acceso de escritura
 
-Con la casilla desactivada tienes las 8 tools de solo lectura. Actívala (Settings →
-Extensions → esta extensión → configurar) para añadir las 8 tools de escritura: editar y
-categorizar movimientos, splits reales, repetitivos, asignación de presupuesto y notas de
-categoría. Claude Desktop pide tu aprobación antes de cada llamada salvo que le concedas
-permiso permanente, y no hay tools de borrado.
+Con la casilla desactivada tienes las 11 tools de solo lectura. Actívala (Settings →
+Extensions → esta extensión → configurar) para añadir las 18 tools de escritura: editar y
+categorizar movimientos, splits reales, repetitivos, asignación de presupuesto, notas de
+categoría, gestión de grupos de categorías/categorías, beneficiarios/transferencias y reglas
+de automatización. Claude Desktop pide tu aprobación antes de cada llamada salvo que le
+concedas permiso permanente. Las tools de clasificación (categorías, grupos de categorías,
+reglas) sincronizan con el servidor tras cada escritura, igual que el resto; las tools de
+borrado (`delete_category`, `delete_category_group`, `delete_rule`) exigen
+`confirm_delete: true` y ofrecen archivar (`hidden: true`) como alternativa no destructiva
+por defecto.
 
 ### Actualizar
 
@@ -131,31 +136,34 @@ Las tres primeras son obligatorias; el resto tienen valores por defecto.
 | `LOCALE` | No | `en-US` | Locale para formatear importes y fechas (ej. `es-ES`) |
 | `CURRENCY` | No | `USD` | Código ISO de moneda de 3 letras (ej. `EUR`) |
 | `SYNC_TTL_SECONDS` | No | `60` | Segundos que se cachea el sync antes de volver a sincronizar |
-| `ENABLE_WRITE` | No | `false` | Habilita las 8 tools de escritura (categorizar, splits, schedules, presupuesto, notas) |
+| `ENABLE_WRITE` | No | `false` | Habilita las 18 tools de escritura (categorizar, splits, schedules, presupuesto, notas, grupos de categorías/categorías, beneficiarios/transferencias, reglas) |
 | `MESSAGES_LANG` | No | `es` | Idioma de los mensajes de error del servidor: `es` o `en` |
 
 ## Herramientas disponibles
 
-El servidor expone 8 herramientas de solo lectura (v2):
+El servidor expone 11 herramientas de solo lectura:
 
 | Herramienta | Descripción |
 |---|---|
 | `get_accounts` | Cuentas con balance actual. Incluye off-budget (pensiones, fondos, hipoteca) por defecto |
 | `get_net_worth` | Patrimonio neto completo: on-budget + off-budget con desglose por cuenta |
 | `get_categories` | Grupos y categorías con sus IDs (los IDs son necesarios para las tools de escritura) |
+| `get_payees` | Beneficiarios con sus IDs; un beneficiario con `transfer_account_id` es el que Actual usa para representar esa cuenta en una transferencia |
+| `get_account_transfer_payee` | El beneficiario que representa una cuenta concreta en una transferencia — atajo sobre `get_payees` |
 | `get_transactions` | Transacciones por rango de fechas con filtros opcionales (cuenta, categoría, texto, importe, sin categorizar). Excluye transferencias. Paginado (máx. 200) |
 | `get_spending_summary` | Gasto agregado por categoría, beneficiario o mes. Excluye transferencias siempre |
 | `get_budget_month` | Estado del presupuesto de un mes: to-budget, ingresos, totales y asignado/gastado/balance por categoría |
 | `get_budget_averages` | Media, mediana y máximo de gasto por categoría en los últimos N meses completos — insumo para preparar el presupuesto |
 | `get_schedules` | Repetitivos configurados en Actual (nombre, próxima fecha, importe) |
+| `get_rules` | Reglas de automatización con sus IDs; las reglas se ejecutan al importar movimientos y son cómo los movimientos recurrentes se autoclasifican |
 
 ## Herramientas de escritura
 
-Con `ENABLE_WRITE=true` el servidor expone además estas 8 herramientas de escritura:
+Con `ENABLE_WRITE=true` el servidor expone además estas 18 herramientas de escritura:
 
 | Herramienta | Descripción |
 |---|---|
-| `update_transaction` | Corregir un movimiento (importe, categoría, beneficiario, notas, fecha) |
+| `update_transaction` | Corregir un movimiento (importe, categoría, beneficiario, notas, fecha). `category_id: null` lo descategoriza; `payee_id` fija un beneficiario existente, `payee_name` lo resuelve/crea |
 | `categorize_transactions` | Categorizar en lote (máx. 50), con resultado por elemento |
 | `split_transaction` | Dividir un movimiento en partes reales — reemplaza la transacción (nuevo id) |
 | `create_transaction` | Apuntar un gasto/ingreso, con splits opcionales en la creación |
@@ -164,10 +172,37 @@ Con `ENABLE_WRITE=true` el servidor expone además estas 8 herramientas de escri
 | `transfer_budget` | Mover presupuesto asignado entre categorías |
 | `update_category_note` | Notas de categoría y plantillas de objetivos (templates) |
 
+**Grupos de categorías y categorías**
+
+| Herramienta | Descripción |
+|---|---|
+| `create_category_group` | Crear un nuevo grupo de categorías (los contenedores de nivel superior que agrupan categorías) |
+| `update_category_group` | Renombrar un grupo de categorías o archivarlo (`hidden: true`) — la alternativa no destructiva a `delete_category_group` |
+| `delete_category_group` | Borrar permanentemente un grupo de categorías y todas las categorías que contiene. Exige `confirm_delete: true`; si alguna tiene movimientos, `transfer_category_id` es obligatorio |
+| `create_category` | Crear una categoría dentro de un grupo existente |
+| `update_category` | Renombrar una categoría, moverla a otro grupo, o archivarla (`hidden: true`) — la alternativa no destructiva a `delete_category` |
+| `delete_category` | Borrar permanentemente una categoría. Exige `confirm_delete: true`; si tiene movimientos, `transfer_category_id` es obligatorio |
+
+**Beneficiarios y transferencias**
+
+| Herramienta | Descripción |
+|---|---|
+| `set_transaction_transfer` | Convertir un movimiento normal en una transferencia con otra cuenta, apuntándolo al beneficiario de transferencia de esa cuenta. Actual crea y enlaza el movimiento correspondiente en la otra cuenta |
+
+**Reglas**
+
+| Herramienta | Descripción |
+|---|---|
+| `create_rule` | Crear una regla de automatización: una condición (p. ej. beneficiario_importado contiene "X" — usa beneficiario_importado, no beneficiario, para que dispare la primera vez que se importa ese pagador) más una acción (p. ej. fijar categoría = id). Solo se aplica en futuras importaciones, nunca retroactivamente. Una acción que fija el beneficiario a un pagador de transferencia no crea una transferencia real; usa después set_transaction_transfer |
+| `update_rule` | Reemplazar una regla de automatización — la API de Actual toma el objeto completo, así que hay que reenviar todos los campos que se quieran conservar |
+| `delete_rule` | Borrar una regla de automatización. Los movimientos pasados conservan lo que la regla ya les aplicó; solo cambian las futuras importaciones |
+
 > **Escritura desactivada por defecto.** Las tools de escritura solo aparecen si defines `ENABLE_WRITE=true` en el bloque `env` de `claude_desktop_config.json` (y reinicias Claude Desktop).
 >
 > - Los **importes se dan en unidades** de la moneda configurada (euros, no céntimos); el servidor hace la conversión.
 > - `split_transaction` **reemplaza** la transacción original por una nueva con subtransacciones, así que el movimiento resultante tiene un **id nuevo**.
+> - Las tools de clasificación (categorías, grupos de categorías y reglas) **sincronizan con el servidor tras cada escritura**.
+> - Las tools de borrado (`delete_category`, `delete_category_group`, `delete_rule`) exigen **`confirm_delete: true`**; archivar (`hidden: true`, vía `update_category`/`update_category_group`) es la alternativa no destructiva por defecto y conserva el historial.
 
 ## Ejemplos de uso con Claude
 
@@ -186,7 +221,8 @@ Claude usará automáticamente las herramientas MCP para consultar tus datos rea
 - **NUNCA** commitear el archivo `.env` al repositorio
 - La contraseña de Actual Budget va solo en `.env` local o en la config de Claude Desktop
 - El `.gitignore` ya excluye `.env`, `node_modules/` y datos locales
-- No hay tools de borrado; las tools de escritura no se registran sin `ENABLE_WRITE`; hay guardas contra editar partes/padres de un split
+- No hay tools de borrado de transacciones, cuentas ni asignaciones de presupuesto. Las únicas tools de borrado son `delete_category`, `delete_category_group` y `delete_rule`; cada una exige `confirm_delete: true`, y archivar (`hidden: true`) es la alternativa no destructiva por defecto
+- Las tools de escritura no se registran sin `ENABLE_WRITE`; hay guardas contra editar partes/padres de un split
 
 Tres cosas que conviene saber antes de activar la escritura:
 
@@ -225,7 +261,7 @@ El servidor se comunica por stdio (stdin/stdout), así que al ejecutarlo manualm
 ### Tests y smoke
 
 ```bash
-npm test        # suite completa con Vitest (127 tests)
+npm test        # suite completa con Vitest (325 tests)
 npm run smoke   # comprobación manual contra el servidor Actual real (requiere .env)
 ```
 

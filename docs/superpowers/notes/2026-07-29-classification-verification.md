@@ -55,10 +55,59 @@ account", not specifically on-budget.
 - No contradictions found; `set_transaction_transfer.ts`'s description did not need
   correcting, and no other Phase 2 tool needed changes.
 
-## Phase 3 — rules
+## Phase 3 — rules (2026-08-03)
 
-Pending. `scripts/verify/phase3-rules.ts` is written and type-checks clean but has not yet
-been run against a live server.
+`scripts/verify/phase3-rules.ts` — **12/12 checks passed** (after one script fix, see
+below), `RESULT={"checks_total":12,"checks_passed":12,"failed":false}`.
+
+**Real finding, not a plan contradiction but a real gap in the plan's own illustrative
+example** (`payee contains "Landlord"`, used in `tests/core/rule-schema.test.ts` and echoed
+in `create_rule.ts`'s original description): the first version of this script used
+`{ field: 'payee', op: 'contains', value: '<name>' }` and the rule never fired on either
+import path (`create_transaction`/`api.addTransactions`, and `api.importTransactions`
+directly) — acceptance criterion 1 failed outright (`RESULT` showed `4/5` with a `FAIL` on
+"at least one import path applies the rule category"). Read `@actual-app/core`'s
+`server/accounts/sync.ts` and `server/transactions/transaction-rules.ts` to find out why:
+`runRules()` runs during import BEFORE the imported payee name is resolved into an actual
+payee row, so a condition on the `payee` field (which matches an already-existing payee, by
+id or by its stored name) has nothing to match against yet for a payee's first-ever
+appearance. A throwaway diagnostic (`payee` → `imported_payee` on an otherwise identical
+rule) confirmed the fix: `imported_payee` matches the raw imported text and fires correctly
+on first import. **`payee` is only useful for rules matching an already-existing payee**
+(e.g. renaming behaviour for a payee you already have); **`imported_payee` is what a rule
+needs to auto-categorize a payee the first time Actual ever sees it** — which is the common
+"recurring bill" use case the plan's own example was illustrating, so the example itself was
+subtly wrong about which field to use. Fixed in the script (all three rule conditions now
+use `imported_payee`) and in `src/tools/create_rule.ts`'s description, which now explicitly
+tells the model to use `imported_payee` for first-import matching and clarifies what `payee`
+actually matches.
+
+- **Acceptance criterion 1, answered** (once the field was fixed): rules DO run on import —
+  both `create_transaction` (via `api.addTransactions`) and `api.importTransactions`
+  directly trigger `runRules()` (confirmed by reading `sync.ts`, both paths call
+  `reconcileTransactions`, which calls `runRules` in its first pass). The script's original
+  framing ("which import path triggers rules") was the wrong question — both paths do; the
+  condition's field choice was what mattered.
+- **`update_rule` re-verified live**: after changing the rule's action to a different
+  category, a fresh import applies the NEW category (check 3c).
+- **Acceptance criterion 2 (open question 3), answered — rules cannot produce a real
+  transfer**: a rule whose action is `set payee = <transfer payee id>` does NOT result in a
+  `transfer_id` on the imported transaction (`RECORD ... = false`). Confirmed the documented
+  fallback is required: `create_rule.ts`'s description now says to follow up with
+  `set_transaction_transfer` on the resulting transaction when a real transfer is needed.
+- `delete_rule` confirmed live for both rules created; `get_rules` no longer lists them
+  after deletion.
+
+### Files changed as a result of this phase's findings
+
+- `scripts/verify/phase3-rules.ts`: all three rule conditions changed from `field: 'payee'`
+  to `field: 'imported_payee'`.
+- `src/tools/create_rule.ts`: description rewritten to (a) use `imported_payee` in its
+  example and explain the `payee`/`imported_payee` distinction, (b) document that a
+  transfer-payee action does not create a real transfer and point at
+  `set_transaction_transfer`. No behavioural/schema change — `rule-schema.ts` already
+  allowed `imported_payee` as a condition field, and both `payee` and `imported_payee` are
+  already in `CONDITION_FIELDS`; this was a documentation-accuracy fix, not a bug fix.
 
 ## Incident during this verification pass (2026-08-03)
 

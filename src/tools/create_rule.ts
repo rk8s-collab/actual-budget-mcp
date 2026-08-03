@@ -8,7 +8,7 @@ const input = RULE_SHAPE;
 export const tool: ToolDef = {
   name: 'create_rule',
   title: 'Create rule',
-  description: "Create an automation rule. Rules run on transactions as they are imported: a condition like payee contains 'X' with an action set category = <id> is how recurring movements classify themselves. Ids must be UUIDs from get_categories / get_payees / get_accounts; amounts are in currency units. Rules do not apply retroactively to existing transactions.",
+  description: "Create an automation rule. Rules run on transactions as they are imported: a condition like imported_payee contains 'X' with an action set category = <id> is how a recurring movement classifies itself the first time it is seen. Use imported_payee (not payee) to match by the raw imported text before a payee exists; payee only matches an ALREADY-EXISTING payee (by id, or by name once one has been created). An action that sets payee to a transfer payee does NOT create a real linked transfer -- follow up with set_transaction_transfer on the resulting transaction if you need one. Ids must be UUIDs from get_categories / get_payees / get_accounts; amounts are in currency units. Rules do not apply retroactively to existing transactions.",
   readOnly: false,
   annotations: { destructiveHint: false, idempotentHint: false },
   inputSchema: input,
