@@ -107,7 +107,7 @@ $ curl -s http://localhost:5006/account/needs-bootstrap
 {"status":"ok","data":{"bootstrapped":false,"loginMethod":"password","availableLoginMethods":[],"multiuser":false}}
 
 $ curl -s -X POST http://localhost:5006/account/bootstrap -H 'content-type: application/json' -d '{"password":"spike-pass"}'
-{"status":"ok","data":{"token":"b6e14cd4-bbbb-49be-8dc9-0cbe2b31c24c"}}
+{"status":"ok","data":{"token":"<session-token>"}}
 
 $ curl -s -X POST http://localhost:5006/account/bootstrap -H 'content-type: application/json' -d '{"password":"spike-pass-2"}'
 {"status":"error","reason":"already-bootstrapped"}
