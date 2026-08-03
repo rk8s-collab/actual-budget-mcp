@@ -46,8 +46,10 @@ this extension → configure) to add the 18 write tools: editing and categorizin
 real splits, scheduled transactions, budget assignment, category notes, managing category
 groups/categories, payees/transfers and automation rules. Claude Desktop asks for your
 approval before each call unless you grant it standing permission. The classification tools
-(categories, category groups, rules) sync to the server after every write, same as the rest;
-the delete tools (`delete_category`, `delete_category_group`, `delete_rule`) require
+(categories, category groups, rules, `set_transaction_transfer`) sync to the server after
+every write — the 8 write tools from earlier versions don't do this themselves, they rely on
+the next scheduled sync instead. The delete tools (`delete_category`, `delete_category_group`,
+`delete_rule`) require
 `confirm_delete: true` and default to archiving (`hidden: true`) as the non-destructive
 alternative.
 
@@ -203,7 +205,7 @@ Registered only when `ENABLE_WRITE=true`.
 > - They only appear when `ENABLE_WRITE=true` is set in the `env` block (restart the client after changing it).
 > - **Input amounts are in currency units** (euros/dollars, not cents); the server handles the conversion.
 > - `split_transaction` **replaces** the original transaction with a new one carrying subtransactions, so the resulting transaction has a **new id**.
-> - The classification tools (categories, category groups and rules) **sync to the server after every write**.
+> - The classification tools (categories, category groups, rules and `set_transaction_transfer`) **sync to the server after every write** — the 8 write tools from earlier versions don't, they rely on the next scheduled sync instead.
 > - The delete tools (`delete_category`, `delete_category_group`, `delete_rule`) require **`confirm_delete: true`**; archiving (`hidden: true`, via `update_category`/`update_category_group`) is the non-destructive default and keeps history intact.
 
 ## Safety

@@ -38,8 +38,10 @@ categorizar movimientos, splits reales, repetitivos, asignación de presupuesto,
 categoría, gestión de grupos de categorías/categorías, beneficiarios/transferencias y reglas
 de automatización. Claude Desktop pide tu aprobación antes de cada llamada salvo que le
 concedas permiso permanente. Las tools de clasificación (categorías, grupos de categorías,
-reglas) sincronizan con el servidor tras cada escritura, igual que el resto; las tools de
-borrado (`delete_category`, `delete_category_group`, `delete_rule`) exigen
+reglas, `set_transaction_transfer`) sincronizan con el servidor tras cada escritura — las 8
+tools de escritura de versiones anteriores no lo hacen por sí mismas, dependen del siguiente
+sync programado. Las tools de borrado (`delete_category`, `delete_category_group`,
+`delete_rule`) exigen
 `confirm_delete: true` y ofrecen archivar (`hidden: true`) como alternativa no destructiva
 por defecto.
 
@@ -193,7 +195,7 @@ Con `ENABLE_WRITE=true` el servidor expone además estas 18 herramientas de escr
 
 | Herramienta | Descripción |
 |---|---|
-| `create_rule` | Crear una regla de automatización: una condición (p. ej. beneficiario_importado contiene "X" — usa beneficiario_importado, no beneficiario, para que dispare la primera vez que se importa ese pagador) más una acción (p. ej. fijar categoría = id). Solo se aplica en futuras importaciones, nunca retroactivamente. Una acción que fija el beneficiario a un pagador de transferencia no crea una transferencia real; usa después set_transaction_transfer |
+| `create_rule` | Crear una regla de automatización: una condición (p. ej. `imported_payee` contiene "X" — usa `imported_payee` [beneficiario importado], no `payee` [beneficiario], para que dispare la primera vez que se importa ese pagador) más una acción (p. ej. fijar categoría = id). Solo se aplica en futuras importaciones, nunca retroactivamente. Una acción que fija el beneficiario a un pagador de transferencia no crea una transferencia real; usa después `set_transaction_transfer` |
 | `update_rule` | Reemplazar una regla de automatización — la API de Actual toma el objeto completo, así que hay que reenviar todos los campos que se quieran conservar |
 | `delete_rule` | Borrar una regla de automatización. Los movimientos pasados conservan lo que la regla ya les aplicó; solo cambian las futuras importaciones |
 
@@ -201,7 +203,7 @@ Con `ENABLE_WRITE=true` el servidor expone además estas 18 herramientas de escr
 >
 > - Los **importes se dan en unidades** de la moneda configurada (euros, no céntimos); el servidor hace la conversión.
 > - `split_transaction` **reemplaza** la transacción original por una nueva con subtransacciones, así que el movimiento resultante tiene un **id nuevo**.
-> - Las tools de clasificación (categorías, grupos de categorías y reglas) **sincronizan con el servidor tras cada escritura**.
+> - Las tools de clasificación (categorías, grupos de categorías, reglas y `set_transaction_transfer`) **sincronizan con el servidor tras cada escritura** — las 8 tools de escritura de versiones anteriores no lo hacen, dependen del siguiente sync programado.
 > - Las tools de borrado (`delete_category`, `delete_category_group`, `delete_rule`) exigen **`confirm_delete: true`**; archivar (`hidden: true`, vía `update_category`/`update_category_group`) es la alternativa no destructiva por defecto y conserva el historial.
 
 ## Ejemplos de uso con Claude

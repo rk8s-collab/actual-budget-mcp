@@ -1,8 +1,9 @@
 # Classification write tools — empirical verification
 
 Findings from running `scripts/verify/phase*.ts` against a real Actual server (the
-Connectors Directory demo, `https://actual.mymyc.es`), not the mocked unit tests. Each
-phase's script drives the tool handlers directly against a live API.
+Connectors Directory demo instance — URL and credentials in the private ops repo, never
+here), not the mocked unit tests. Each phase's script drives the tool handlers directly
+against a live API.
 
 ## Phase 1 — taxonomy (2026-08-03)
 
@@ -120,7 +121,7 @@ already applied, so the `users`/`auth` tables were never recreated) also wiped t
 `files` registry that maps a Sync ID to its physical budget file, orphaning the existing
 seeded budget server-side even though its `.sqlite` file was untouched on disk. Recovered
 by re-running `npm run demo:bootstrap`, which produced a fresh seeded budget and a new
-Sync ID (`757ce502-a230-4856-bf40-0210937530c6` → `a7e2ad0a-56cf-4336-9f1a-4eb169c0c0ae`).
+Sync ID (old → new, both recorded privately, neither reused here).
 Full incident detail and the exact recovery commands are in the private
 `arcane-stacks/vm-personal/actual-demo/CREDENTIALS.md` (commit `91027e6`). No implication
 for the classification tools' correctness — this was infrastructure, not tool behavior.
