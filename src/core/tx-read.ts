@@ -67,6 +67,30 @@ export async function readBack(
 }
 
 /**
+ * Variante de readBack para splits: subtransactions es un array, así que row[key] === value
+ * nunca sería cierto. Aquí se confirma la FORMA (is_parent + nº de partes esperado), no el
+ * valor exacto de cada parte.
+ */
+export async function readBackSplit(
+  api: any,
+  id: string,
+  expectedParts: number,
+  opts: { attempts?: number; delayMs?: number; sleep?: (ms: number) => Promise<void> } = {},
+): Promise<{ row: any | null; settled: boolean }> {
+  const attempts = opts.attempts ?? 5;
+  const delayMs = opts.delayMs ?? 20;
+  const sleep = opts.sleep ?? ((ms: number) => new Promise<void>((r) => setTimeout(r, ms)));
+  const isSettled = (row: any) =>
+    !!row?.is_parent && Array.isArray(row.subtransactions) && row.subtransactions.length === expectedParts;
+  let row = await getTransactionById(api, id);
+  for (let i = 1; i < attempts && !isSettled(row); i++) {
+    await sleep(delayMs);
+    row = await getTransactionById(api, id);
+  }
+  return { row, settled: isSettled(row) };
+}
+
+/**
  * Variante por lote de readBack para categorías. Devuelve los ids cuya categoría ya está
  * aplicada. Cada vuelta consulta SOLO los que siguen pendientes: confirmar de uno en uno
  * un lote de 50 serían 50 sondeos secuenciales.

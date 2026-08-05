@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest';
-import { getTransactionById, mapTxEcho, newIdFromDiff, reflectsFields, readBack, readBackCategories } from '../../src/core/tx-read.js';
+import { getTransactionById, mapTxEcho, newIdFromDiff, reflectsFields, readBack, readBackSplit, readBackCategories } from '../../src/core/tx-read.js';
 import { mockApi } from '../helpers/mock-api.js';
 
 describe('getTransactionById', () => {
@@ -81,6 +81,53 @@ describe('readBack', () => {
     expect(r.settled).toBe(false);
     expect(r.row.notes).toBe('vieja'); // se devuelve lo último leído, no una invención
     expect(api.runQuery).toHaveBeenCalledTimes(3);
+  });
+});
+
+describe('readBackSplit', () => {
+  // Mismo problema de carrera que readBack, pero subtransactions es un array: row[key] ===
+  // value nunca sería cierto, así que aquí se compara la forma (is_parent + nº de partes),
+  // no el valor.
+  const unsplit = { id: 't1', date: '2026-07-01', account: 'a1', amount: -18000 };
+  const split = {
+    ...unsplit,
+    is_parent: true,
+    subtransactions: [{ amount: -12000, category: 'c1' }, { amount: -6000, category: 'c2' }],
+  };
+
+  it('waits for the split to land instead of echoing the previous unsplit row', async () => {
+    let reads = 0;
+    const api = mockApi({ runQuery: async () => ({ data: [reads++ < 2 ? unsplit : split] }) });
+    const sleep = vi.fn(async () => {});
+    const r = await readBackSplit(api, 't1', 2, { sleep });
+    expect(r.row.subtransactions).toHaveLength(2);
+    expect(r.settled).toBe(true);
+    expect(sleep).toHaveBeenCalled();
+  });
+
+  it('does not sleep when the first read already reflects the split', async () => {
+    const api = mockApi({ runQuery: vi.fn(async () => ({ data: [split] })) });
+    const sleep = vi.fn(async () => {});
+    const r = await readBackSplit(api, 't1', 2, { sleep });
+    expect(r.settled).toBe(true);
+    expect(sleep).not.toHaveBeenCalled();
+    expect(api.runQuery).toHaveBeenCalledTimes(1);
+  });
+
+  it('gives up after the configured attempts and says so', async () => {
+    const api = mockApi({ runQuery: vi.fn(async () => ({ data: [unsplit] })) });
+    const sleep = vi.fn(async () => {});
+    const r = await readBackSplit(api, 't1', 2, { attempts: 3, sleep });
+    expect(r.settled).toBe(false);
+    expect(r.row.subtransactions).toBeUndefined(); // lo último leído, no una invención
+    expect(api.runQuery).toHaveBeenCalledTimes(3);
+  });
+
+  it('does not settle when the subtransaction count differs from expected (only 1 of 2 parts landed)', async () => {
+    const partial = { ...unsplit, is_parent: true, subtransactions: [{ amount: -18000, category: 'c1' }] };
+    const api = mockApi({ runQuery: vi.fn(async () => ({ data: [partial] })) });
+    const r = await readBackSplit(api, 't1', 2, { attempts: 2, sleep: async () => {} });
+    expect(r.settled).toBe(false);
   });
 });
 
