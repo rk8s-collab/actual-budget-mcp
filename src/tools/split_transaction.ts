@@ -1,7 +1,7 @@
 import { z } from 'zod';
 import { getCategoryIndex } from '../core/categories.js';
 import { toCents, formatAmount } from '../core/money.js';
-import { candidateIds, newIdFromDiff, getTransactionById, mapTxEcho } from '../core/tx-read.js';
+import { getTransactionById, mapTxEcho, readBackSplit } from '../core/tx-read.js';
 import { ID, type ToolDef } from '../core/types.js';
 import { msg } from '../core/messages.js';
 
@@ -20,7 +20,7 @@ const schema = z.object(input);
 export const tool: ToolDef = {
   name: 'split_transaction',
   title: 'Split transaction',
-  description: 'Split an existing transaction into parts with real subtransactions. Parts must sum exactly to the original amount (integer-cent validation); adjust_last=true computes the final part. Internally replaces the transaction (new id).',
+  description: 'Split an existing transaction into parts with real subtransactions. Parts must sum exactly to the original amount (integer-cent validation); adjust_last=true computes the final part.',
   readOnly: false,
   annotations: { destructiveHint: true, idempotentHint: false },
   inputSchema: input,
@@ -38,8 +38,9 @@ export const tool: ToolDef = {
     if (orig.is_parent || (Array.isArray(orig.subtransactions) && orig.subtransactions.length > 0)) {
       throw new Error(m.alreadySplit);
     }
-    // Dividir reemplaza la transacción: si estaba conciliada, la conciliación cerrada
-    // se rompe en silencio. Exigimos confirmación explícita.
+    // Dividir modifica la conciliación de la fila si estaba conciliada: Actual la conserva
+    // (nunca se toca cleared/reconciled aquí), pero exigimos confirmación explícita igual que
+    // antes, porque el split cambia la forma de la transacción.
     if (orig.reconciled && !force) {
       throw new Error(m.reconciledNeedsForce);
     }
@@ -65,51 +66,25 @@ export const tool: ToolDef = {
     }
 
     // Validar TODAS las categorías antes de tocar nada: un id inexistente dejaría
-    // la parte sin categoría en silencio, y el split ya no es reversible sin trabajo.
+    // la parte sin categoría en silencio.
     const cats = await getCategoryIndex(api);
     for (const p of parts) {
       if (!cats.has(p.category)) throw new Error(m.categoryNotFound(p.category));
     }
 
-    // Crear primero, borrar después: un fallo intermedio deja un duplicado visible, nunca pérdida de datos.
-    const copy: any = { date: orig.date, amount: totalCents, subtransactions: parts };
-    if (orig.payee) copy.payee = orig.payee;
-    if (orig.notes) copy.notes = orig.notes;
-    if (orig.cleared !== undefined) copy.cleared = !!orig.cleared;
-    // Metadatos que la copia debe heredar: imported_id/imported_payee son la clave de
-    // deduplicación del banco (perderlos reimportaría el movimiento), schedule mantiene
-    // el vínculo con el repetitivo y reconciled preserva el estado de conciliación.
-    if (orig.imported_id) copy.imported_id = orig.imported_id;
-    if (orig.imported_payee) copy.imported_payee = orig.imported_payee;
-    if (orig.schedule) copy.schedule = orig.schedule;
-    // En el modelo de Actual conciliado implica compensado: copiarlos como campos
-    // independientes podría producir una fila incoherente (reconciled sin cleared).
-    if (orig.reconciled) {
-      copy.reconciled = true;
-      copy.cleared = true;
-    }
-    // Fotografiamos los candidatos ANTES de escribir: con splits agrupados la consulta
-    // puede arrastrar parents ajenos, y el orden de Actual es un detalle interno.
-    const before = new Set(await candidateIds(api, orig.account, orig.date, totalCents));
-    await api.addTransactions(orig.account, [copy], { learnCategories: false, runTransfers: false });
+    // Update in-place: @actual-app/api 26.8.0 convierte correctamente una transacción normal
+    // en split (upstream PR #8467). date/amount/payee/notes/cleared/imported_id/imported_payee/
+    // schedule/reconciled ya viven en la fila y no se tocan -- no hace falta copiarlos.
+    await api.updateTransaction(transaction_id, { subtransactions: parts });
+    const { row, settled } = await readBackSplit(api, transaction_id, parts.length);
 
-    const after = (await candidateIds(api, orig.account, orig.date, totalCents))
-      .filter((cid) => cid !== a.transaction_id); // cinturón y tirantes: el original nunca es la copia
-    const { id: newId, ambiguous } = newIdFromDiff(before, after);
-    if (!newId) {
-      throw new Error(m.splitCreatedNotFound(a.transaction_id));
-    }
-    try {
-      await api.deleteTransaction(a.transaction_id);
-    } catch (err) {
-      throw new Error(m.splitCreatedNotDeleted(newId, a.transaction_id, (err as Error).message));
-    }
-    const fresh = await getTransactionById(api, newId);
     return {
       split: true,
-      original_id: a.transaction_id,
-      ...(ambiguous ? { note: m.ambiguousNewRow } : {}),
-      transaction: mapTxEcho(fresh ?? { ...copy, id: newId, account: orig.account }, config.locale, config.currency),
+      original_id: transaction_id,
+      // El eco es lo LEÍDO. Si la escritura aún no se refleja se avisa en vez de
+      // devolver los valores pedidos como si estuvieran guardados.
+      ...(settled ? {} : { echo_pending: true, note: m.echoPending }),
+      transaction: mapTxEcho(row ?? { ...orig, subtransactions: parts }, config.locale, config.currency),
     };
   },
 };
