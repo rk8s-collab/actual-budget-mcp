@@ -76,9 +76,6 @@ const es = {
   splitChildItem: 'es una parte de un split; usa split_transaction',
   splitParentItem: 'es el padre de un split; la categoría vive en las partes',
   echoPending: 'La escritura se envió pero aún no se refleja al releer; vuelve a consultar la transacción para confirmarla',
-  splitCreatedNotFound: (id: string) => `Split creado pero no localizado; el original ${id} NO se ha borrado — revisa duplicados en Actual`,
-  splitCreatedNotDeleted: (newId: string, id: string, cause: string) =>
-    `Split creado como ${newId} pero no se pudo borrar el original ${id} (${cause}); hay un duplicado visible en Actual — borra el original a mano. Ojo: la copia hereda el mismo id de importación (imported_id) que el original, así que mientras convivan las dos filas comparten la clave de deduplicación del banco y la próxima sincronización bancaria puede confundirse. Si el original estaba conciliado, tendrás que desbloquear la conciliación antes de poder borrarlo`,
   ambiguousNewRow: 'Aparecieron varias filas nuevas con la misma cuenta, fecha e importe; se devuelve la primera. Revisa posibles duplicados en Actual',
   transferRolledBack: (cause: string) =>
     `No se pudo abonar en destino (${cause}); el traspaso se ha revertido y no se ha movido nada`,
@@ -179,9 +176,6 @@ const en: Messages = {
   splitChildItem: 'it is part of a split; use split_transaction',
   splitParentItem: 'it is the parent of a split; the category lives in the parts',
   echoPending: 'The write was sent but is not yet reflected on re-read; query the transaction again to confirm it',
-  splitCreatedNotFound: (id: string) => `Split created but not located; the original ${id} was NOT deleted — check for duplicates in Actual`,
-  splitCreatedNotDeleted: (newId: string, id: string, cause: string) =>
-    `Split created as ${newId} but the original ${id} could not be deleted (${cause}); there is a visible duplicate in Actual — delete the original by hand. Note: the copy inherits the same import id (imported_id) as the original, so while both rows coexist they share the bank's deduplication key and the next bank sync may get confused. If the original was reconciled, you will need to unlock the reconciliation before you can delete it`,
   ambiguousNewRow: 'Several new rows appeared with the same account, date and amount; the first one is returned. Check for possible duplicates in Actual',
   transferRolledBack: (cause: string) =>
     `Could not credit the target (${cause}); the transfer was rolled back and nothing was moved`,
