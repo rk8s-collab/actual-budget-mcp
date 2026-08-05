@@ -83,3 +83,13 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
   ignora el resultado de `load-budget`) y el `sync()` posterior revienta al leer las prefs.
   `ensureReady()` sondea con `getBudgetMonths()` antes de servir `stale`, reabre una vez y,
   si sigue cerrado, lanza un error legible en vez del incomprensible "No budget file is open".
+- **`split_transaction` ya no crea-y-borra (2026-08-05)**: `@actual-app/api` 26.8.0 corrige
+  `updateTransaction` para soportar `subtransactions` sobre una transacción sin dividir (antes
+  lanzaba `"account" is required for table "transactions"`; [PR upstream
+  #8467](https://github.com/actualbudget/actual/pull/8467)). El mecanismo de crear copia +
+  borrar original + localizar por diferencia de conjuntos que documentaba el Plan 3 queda
+  sustituido por una única llamada `updateTransaction(id, { subtransactions })`; los metadatos
+  (`imported_id`, `schedule`, `reconciled`) ya no se copian a mano porque nunca se tocan. Sube el
+  mínimo de `@actual-app/api` a `26.8.0` — el bundle `.mcpb` necesita regenerarse, no basta con
+  el `package.json`. Decisión en Obsidian (`01-Decisiones-Arquitectura`, D7) y spec en
+  `docs/superpowers/specs/2026-08-05-split-transaction-simplification-design.md`.
