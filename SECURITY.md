@@ -73,9 +73,10 @@ There are **no delete tools**: the server cannot remove transactions, accounts, 
 or budgets. Two behaviours still deserve attention and are annotated `destructiveHint: true`
 so clients prompt accordingly:
 
-- **`split_transaction` replaces the transaction.** Actual has no in-place split, so the
-  original is deleted and recreated with subtransactions. The resulting transaction has a
-  **new id**; the old id no longer exists.
+- **`split_transaction` restructures the transaction in place.** Since `@actual-app/api`
+  26.8.0, `updateTransaction` supports adding `subtransactions` directly — the **id is
+  preserved**. An existing split's parts cannot be re-divided without undoing the split
+  first (see the `alreadySplit` guard); that is the destructive edge case this annotation covers.
 - **Overwriting tools.** `set_budget`, `transfer_budget`, `update_transaction` and
   `update_category_note` replace existing values rather than adding to them. Each returns
   an echo of the resulting state (and, for the note, the previous one) so the change is

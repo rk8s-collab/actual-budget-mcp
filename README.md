@@ -169,7 +169,7 @@ Registered only when `ENABLE_WRITE=true`.
 |---|---|
 | `update_transaction` | Fix a transaction (amount, category, payee, notes, date). `category_id: null` uncategorizes it; `payee_id` sets a known payee, `payee_name` resolves/creates one |
 | `categorize_transactions` | Categorize in bulk (max 50), with a per-item result |
-| `split_transaction` | Split a transaction into real parts — replaces the transaction (new id) |
+| `split_transaction` | Split a transaction into real parts, in place (same id) |
 | `create_transaction` | Record an expense/income, with optional splits at creation |
 | `create_schedule` | Create a scheduled/recurring transaction |
 | `set_budget` | Assign budget in bulk to several categories of a month |
@@ -204,7 +204,7 @@ Registered only when `ENABLE_WRITE=true`.
 > **Notes on the write tools**
 > - They only appear when `ENABLE_WRITE=true` is set in the `env` block (restart the client after changing it).
 > - **Input amounts are in currency units** (euros/dollars, not cents); the server handles the conversion.
-> - `split_transaction` **replaces** the original transaction with a new one carrying subtransactions, so the resulting transaction has a **new id**.
+> - `split_transaction` updates the transaction **in place** with its subtransactions — the **id is unchanged**.
 > - The classification tools (categories, category groups, rules and `set_transaction_transfer`) **sync to the server after every write** — the 8 write tools from earlier versions don't, they rely on the next scheduled sync instead.
 > - The delete tools (`delete_category`, `delete_category_group`, `delete_rule`) require **`confirm_delete: true`**; archiving (`hidden: true`, via `update_category`/`update_category_group`) is the non-destructive default and keeps history intact.
 
@@ -219,7 +219,7 @@ Three things worth knowing before you enable writes:
 
 - `data/` holds a **plain, unencrypted copy** of your whole budget (created owner-only, mode `0700`).
 - Payee names and notes come from bank sync or CSV imports: they are **untrusted text**, not instructions. Keep per-call approval on in your MCP client.
-- `split_transaction` **replaces** the transaction, so it gets a new id.
+- `split_transaction` updates the transaction **in place** — the id does not change.
 - Every MCP client you connect starts its own server process. Only one process can open a
   budget at a time, so extra instances automatically use their own local copy
   (`<data dir>-instance-<pid>`). In a manual installation you can set `ACTUAL_DATA_DIR` per

@@ -167,7 +167,7 @@ Con `ENABLE_WRITE=true` el servidor expone además estas 18 herramientas de escr
 |---|---|
 | `update_transaction` | Corregir un movimiento (importe, categoría, beneficiario, notas, fecha). `category_id: null` lo descategoriza; `payee_id` fija un beneficiario existente, `payee_name` lo resuelve/crea |
 | `categorize_transactions` | Categorizar en lote (máx. 50), con resultado por elemento |
-| `split_transaction` | Dividir un movimiento en partes reales — reemplaza la transacción (nuevo id) |
+| `split_transaction` | Dividir un movimiento en partes reales, in situ (mismo id) |
 | `create_transaction` | Apuntar un gasto/ingreso, con splits opcionales en la creación |
 | `create_schedule` | Crear un repetitivo (schedule) |
 | `set_budget` | Asignar presupuesto en lote a varias categorías de un mes |
@@ -202,7 +202,7 @@ Con `ENABLE_WRITE=true` el servidor expone además estas 18 herramientas de escr
 > **Escritura desactivada por defecto.** Las tools de escritura solo aparecen si defines `ENABLE_WRITE=true` en el bloque `env` de `claude_desktop_config.json` (y reinicias Claude Desktop).
 >
 > - Los **importes se dan en unidades** de la moneda configurada (euros, no céntimos); el servidor hace la conversión.
-> - `split_transaction` **reemplaza** la transacción original por una nueva con subtransacciones, así que el movimiento resultante tiene un **id nuevo**.
+> - `split_transaction` actualiza la transacción **in situ** con sus subtransacciones — el **id no cambia**.
 > - Las tools de clasificación (categorías, grupos de categorías, reglas y `set_transaction_transfer`) **sincronizan con el servidor tras cada escritura** — las 8 tools de escritura de versiones anteriores no lo hacen, dependen del siguiente sync programado.
 > - Las tools de borrado (`delete_category`, `delete_category_group`, `delete_rule`) exigen **`confirm_delete: true`**; archivar (`hidden: true`, vía `update_category`/`update_category_group`) es la alternativa no destructiva por defecto y conserva el historial.
 
@@ -230,7 +230,7 @@ Tres cosas que conviene saber antes de activar la escritura:
 
 - `data/` guarda una **copia sin cifrar** de todo tu presupuesto (se crea con permisos `0700`, solo para ti).
 - Los nombres de pagador y las notas vienen del banco o de importaciones CSV: son **texto no confiable**, no instrucciones. Mantén la aprobación por llamada activada en tu cliente MCP.
-- `split_transaction` **reemplaza** la transacción, así que obtiene un id nuevo.
+- `split_transaction` actualiza la transacción **in situ** — el id no cambia.
 - Cada cliente MCP que conectes arranca su propio proceso del servidor. Actual solo permite
   que un proceso abra el presupuesto a la vez, así que las instancias extra usan
   automáticamente su propia copia local (`<data dir>-instance-<pid>`). En una instalación

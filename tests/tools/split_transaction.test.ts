@@ -87,12 +87,24 @@ describe('split_transaction', () => {
     expect(sent[1].amount).toBe(-6000); // -18000 - (-12000)
   });
 
-  it('refuses transfers and already-split transactions', async () => {
+  it('refuses transfers', async () => {
     const api = mockApi({ runQuery: async () => ({ data: [{ ...original, transfer_id: 'x' }] }) });
     await expect(tool.handler(
       { transaction_id: T1, splits: [{ amount: -180, category_id: C1 }] },
       { api, config: testConfig },
     )).rejects.toThrow(/transferencia/i);
+  });
+
+  it('refuses a transaction that is already split -- an in-place update would silently overwrite its existing parts', async () => {
+    const alreadySplit = { ...original, is_parent: true, subtransactions: [
+      { amount: -12000, category: C1 }, { amount: -6000, category: C2 },
+    ] };
+    const api = mockApi({ runQuery: async () => ({ data: [alreadySplit] }) });
+    await expect(tool.handler(
+      { transaction_id: T1, splits: [{ amount: -90, category_id: C1 }, { amount: -90, category_id: C2 }] },
+      { api, config: testConfig },
+    )).rejects.toThrow(/dividida|already split/i);
+    expect(api.updateTransaction).not.toHaveBeenCalled();
   });
 
   it('rejects a well-formed but non-existent category in any part, before writing', async () => {
