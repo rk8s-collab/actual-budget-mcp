@@ -93,3 +93,11 @@ Detalle: nota `Integracion-Superpowers-Personal` en Obsidian-Personal.
   mínimo de `@actual-app/api` a `26.8.0` — el bundle `.mcpb` necesita regenerarse, no basta con
   el `package.json`. Decisión en Obsidian (`01-Decisiones-Arquitectura`, D7) y spec en
   `docs/superpowers/specs/2026-08-05-split-transaction-simplification-design.md`.
+  **Cerrado (2026-08-07)**: verificación empírica contra el servidor de pruebas real, 16/16
+  comprobaciones en verde (el hijo hereda `account`/`date` del padre — el caso exacto que
+  corrige el PR #8467 —, `reconciled`/`cleared` sobreviven al dividir con `force:true`,
+  `imported_id`/`imported_payee` quedan intactos). Bundle `.mcpb` regenerado e instalado en
+  Claude Desktop, funcionando. Aprendizaje del propio proceso: tras fusionar una rama de
+  worktree en `main`, hace falta `npm install` en el checkout principal — el `node_modules`
+  no se actualiza solo con el merge, y quedarse en una versión vieja de `@actual-app/api`
+  reprodujo brevemente el bug original que este cambio corrige.
