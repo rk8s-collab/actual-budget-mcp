@@ -31,7 +31,7 @@ import * as path from 'node:path';
 import * as api from '@actual-app/api';
 import { loadDemoEnv } from '../demo/env.js';
 import { loadConfig } from '../../src/core/config.js';
-import { getTransactionById } from '../../src/core/tx-read.js';
+import { candidateIds, newIdFromDiff, getTransactionById } from '../../src/core/tx-read.js';
 import { tool as getAccounts } from '../../src/tools/get_accounts.js';
 import { tool as getCategories } from '../../src/tools/get_categories.js';
 import { tool as splitTransaction } from '../../src/tools/split_transaction.js';
@@ -61,8 +61,10 @@ function safeJson(value: unknown): string {
   }
 }
 
-/** Best-effort teardown: deletes every verification transaction created. Never throws -- a
- *  cleanup failure must not mask the real check result. */
+/** Best-effort teardown: deletes every verification transaction created, then sweeps for any
+ *  stray row carrying the NAME_PREFIX note that wasn't tracked (e.g. an interrupted prior run) --
+ *  self-healing rather than relying solely on txIds. Never throws -- a cleanup failure must not
+ *  mask the real check result. */
 async function cleanup(txIds: string[]): Promise<void> {
   const uniqueIds = [...new Set(txIds.filter((id): id is string => typeof id === 'string' && id.length > 0))];
   for (const id of uniqueIds) {
@@ -72,6 +74,21 @@ async function cleanup(txIds: string[]): Promise<void> {
     } catch (err) {
       console.warn(`CLEANUP WARNING could not delete transaction ${id}: ${(err as Error).message}`);
     }
+  }
+  try {
+    const { data: stray } = (await (api as any).runQuery(
+      (api as any).q('transactions').filter({ notes: { $like: `%${NAME_PREFIX}%` } }).select(['id', 'notes']),
+    )) as { data: any[] };
+    for (const row of stray ?? []) {
+      try {
+        await api.deleteTransaction(row.id);
+        console.log(`CLEANUP swept stray verification transaction ${row.id} (${row.notes})`);
+      } catch (err) {
+        console.warn(`CLEANUP WARNING could not delete stray transaction ${row.id}: ${(err as Error).message}`);
+      }
+    }
+  } catch (err) {
+    console.warn(`CLEANUP WARNING stray sweep failed: ${(err as Error).message}`);
   }
 }
 
@@ -99,12 +116,18 @@ async function run(): Promise<number> {
       const [catA, catB] = allCats;
 
       // --- Check group 1: plain (non-reconciled) transaction, no extra metadata. ---
-      const plainIds = (await api.addTransactions(accountId, [
+      // addTransactions resolves to the literal "ok" (see @actual-app/api's addTransactions
+      // .d.ts: Promise<"ok">), never ids -- the new row is found the same way
+      // create_transaction.ts does it: a before/after candidateIds snapshot diff on
+      // (account, date, amount).
+      const plainBefore = new Set(await candidateIds(api, accountId, TX_DATE, -18000));
+      await api.addTransactions(accountId, [
         { date: TX_DATE, amount: -18000, notes: `${NAME_PREFIX} plain`, cleared: false },
-      ], { learnCategories: false, runTransfers: false })) as unknown as string[];
-      const plainTxId = Array.isArray(plainIds) ? plainIds[0] : (plainIds as unknown as string);
-      check('1a plain transaction created', typeof plainTxId === 'string' && plainTxId.length > 0, plainIds);
-      if (plainTxId) txIds.push(plainTxId);
+      ], { learnCategories: false, runTransfers: false });
+      const plainDiff = newIdFromDiff(plainBefore, await candidateIds(api, accountId, TX_DATE, -18000));
+      check('1a plain transaction created', typeof plainDiff.id === 'string' && plainDiff.id.length > 0, plainDiff);
+      const plainTxId = plainDiff.id as string;
+      txIds.push(plainTxId);
 
       const plainResult: any = await splitTransaction.handler(
         { transaction_id: plainTxId, splits: [
@@ -126,12 +149,14 @@ async function run(): Promise<number> {
       check('1i child inherits the parent date', child?.date === TX_DATE, child);
 
       // --- Check group 2: reconciled transaction, force:true. ---
-      const reconciledIds = (await api.addTransactions(accountId, [
+      const reconciledBefore = new Set(await candidateIds(api, accountId, TX_DATE, -9000));
+      await api.addTransactions(accountId, [
         { date: TX_DATE, amount: -9000, notes: `${NAME_PREFIX} reconciled`, cleared: true, reconciled: true },
-      ], { learnCategories: false, runTransfers: false })) as unknown as string[];
-      const reconciledTxId = Array.isArray(reconciledIds) ? reconciledIds[0] : (reconciledIds as unknown as string);
-      check('2a reconciled transaction created', typeof reconciledTxId === 'string' && reconciledTxId.length > 0, reconciledIds);
-      if (reconciledTxId) txIds.push(reconciledTxId);
+      ], { learnCategories: false, runTransfers: false });
+      const reconciledDiff = newIdFromDiff(reconciledBefore, await candidateIds(api, accountId, TX_DATE, -9000));
+      check('2a reconciled transaction created', typeof reconciledDiff.id === 'string' && reconciledDiff.id.length > 0, reconciledDiff);
+      const reconciledTxId = reconciledDiff.id as string;
+      txIds.push(reconciledTxId);
 
       await splitTransaction.handler(
         { transaction_id: reconciledTxId, force: true, splits: [
@@ -145,15 +170,17 @@ async function run(): Promise<number> {
       check('2c reconciled transaction keeps cleared:true after splitting with force', !!reconciledRow?.cleared, reconciledRow);
 
       // --- Check group 3: imported_id/imported_payee survive untouched. ---
-      const importedIds = (await api.addTransactions(accountId, [
+      const importedBefore = new Set(await candidateIds(api, accountId, TX_DATE, -4500));
+      await api.addTransactions(accountId, [
         {
           date: TX_DATE, amount: -4500, notes: `${NAME_PREFIX} imported`, cleared: true,
           imported_id: `${NAME_PREFIX}-imp-1`, imported_payee: `${NAME_PREFIX} MERCADONA`,
         },
-      ], { learnCategories: false, runTransfers: false })) as unknown as string[];
-      const importedTxId = Array.isArray(importedIds) ? importedIds[0] : (importedIds as unknown as string);
-      check('3a transaction with imported metadata created', typeof importedTxId === 'string' && importedTxId.length > 0, importedIds);
-      if (importedTxId) txIds.push(importedTxId);
+      ], { learnCategories: false, runTransfers: false });
+      const importedDiff = newIdFromDiff(importedBefore, await candidateIds(api, accountId, TX_DATE, -4500));
+      check('3a transaction with imported metadata created', typeof importedDiff.id === 'string' && importedDiff.id.length > 0, importedDiff);
+      const importedTxId = importedDiff.id as string;
+      txIds.push(importedTxId);
 
       await splitTransaction.handler(
         { transaction_id: importedTxId, splits: [
@@ -173,10 +200,20 @@ async function run(): Promise<number> {
     await cleanup(txIds);
 
     try {
-      const { data: leftoverTx } = (await (api as any).runQuery(
-        (api as any).q('transactions').filter({ notes: { $like: `%${NAME_PREFIX}%` } }).select(['id', 'notes']),
-      )) as { data: any[] };
-      check('4a no transaction with a ZZZ Verify note remains after cleanup', ((leftoverTx as any[]) ?? []).length === 0, leftoverTx);
+      // deleteTransaction resolves before the delete lands (the same "write resolves before it
+      // lands" race documented at length on readBack in src/core/tx-read.ts), so a query fired
+      // immediately after cleanup() can still see rows that are already gone a moment later.
+      // Poll briefly instead of asserting on the first read.
+      let leftoverTx: any[] = [];
+      for (let attempt = 0; attempt < 5; attempt++) {
+        if (attempt > 0) await new Promise((r) => setTimeout(r, 200));
+        const { data } = (await (api as any).runQuery(
+          (api as any).q('transactions').filter({ notes: { $like: `%${NAME_PREFIX}%` } }).select(['id', 'notes']),
+        )) as { data: any[] };
+        leftoverTx = data ?? [];
+        if (leftoverTx.length === 0) break;
+      }
+      check('4a no transaction with a ZZZ Verify note remains after cleanup', leftoverTx.length === 0, leftoverTx);
     } catch (err) {
       failed = true;
       console.error(err instanceof Error ? err.message : err);
